@@ -42,6 +42,7 @@ export const AD_ANGLE_PRESETS = [
 export type LeadStatus = (typeof LEAD_STATUSES)[number];
 export type EquipmentType = (typeof EQUIPMENT_TYPES)[number];
 export type AdAnglePreset = (typeof AD_ANGLE_PRESETS)[number];
+export type USState = (typeof US_STATES)[number];
 
 export type Lead = {
   id: string;

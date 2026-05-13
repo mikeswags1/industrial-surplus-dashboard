@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EQUIPMENT_TYPES, US_STATES } from "@/lib/types";
+import { EQUIPMENT_TYPES, US_STATES, type EquipmentType, type USState } from "@/lib/types";
 
 type GenBody = {
   industry: string;
@@ -14,8 +14,8 @@ type GenBody = {
 
 export default function EmailGeneratorPage() {
   const [industry, setIndustry] = useState("Manufacturing");
-  const [equipment, setEquipment] = useState(EQUIPMENT_TYPES[0]);
-  const [state, setState] = useState("TX");
+  const [equipment, setEquipment] = useState<EquipmentType>(EQUIPMENT_TYPES[0]);
+  const [state, setState] = useState<USState>("TX");
   const [company, setCompany] = useState("");
   const [pain, setPain] = useState(
     "Idle assets taking floor space; need quick valuation and pickup."
@@ -90,7 +90,7 @@ export default function EmailGeneratorPage() {
             <select
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
               value={equipment}
-              onChange={(e) => setEquipment(e.target.value)}
+              onChange={(e) => setEquipment(e.target.value as EquipmentType)}
             >
               {EQUIPMENT_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -104,7 +104,7 @@ export default function EmailGeneratorPage() {
             <select
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
               value={state}
-              onChange={(e) => setState(e.target.value)}
+              onChange={(e) => setState(e.target.value as USState)}
             >
               {US_STATES.map((s) => (
                 <option key={s} value={s}>

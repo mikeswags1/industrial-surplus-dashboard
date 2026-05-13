@@ -7,12 +7,13 @@ import {
   US_STATES,
   type AdAnglePreset,
   type EquipmentType,
+  type USState,
 } from "@/lib/types";
 
 export default function AdScriptsPage() {
   const [angle, setAngle] = useState<AdAnglePreset>(AD_ANGLE_PRESETS[0]);
   const [equipment, setEquipment] = useState<EquipmentType>(EQUIPMENT_TYPES[0]);
-  const [state, setState] = useState("TX");
+  const [state, setState] = useState<USState>("TX");
   const [extra, setExtra] = useState(
     "Fast cash quotes, free evaluations, nationwide pickup."
   );
@@ -93,7 +94,7 @@ export default function AdScriptsPage() {
             <select
               className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
               value={state}
-              onChange={(e) => setState(e.target.value)}
+              onChange={(e) => setState(e.target.value as USState)}
             >
               {US_STATES.map((s) => (
                 <option key={s} value={s}>
