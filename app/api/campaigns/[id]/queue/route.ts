@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import {
+  isDatabaseNotConfiguredError,
+  jsonDatabaseNotConfigured,
+} from "@/lib/api/database-error";
+import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -8,8 +12,13 @@ const MAX_BATCH = 200;
 /** Enqueue step-0 sends for a list of leads (worker / cron will drain). */
 export async function POST(request: Request, ctx: Ctx) {
   const { id: campaignId } = await ctx.params;
-  const admin = getSupabaseAdmin();
-  if (!admin) return NextResponse.json({ error: "not_configured" }, { status: 501 });
+  let admin;
+  try {
+    admin = requireSupabaseAdmin();
+  } catch (e) {
+    if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
+    throw e;
+  }
 
   let body: { leadIds?: string[] };
   try {

@@ -3,6 +3,6 @@ import { isSupabaseServerConfigured } from "@/lib/env/server";
 
 export async function GET() {
   return NextResponse.json({
-    dataLayer: isSupabaseServerConfigured() ? "supabase" : "local",
+    dataLayer: isSupabaseServerConfigured() ? "supabase" : "unconfigured",
   });
 }

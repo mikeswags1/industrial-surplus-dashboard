@@ -66,12 +66,14 @@ export type Lead = {
   company_summary?: string | null;
   industry_detected?: string | null;
   keywords?: string[];
+  organization_id?: string | null;
 };
 
 export type CampaignStatus = "draft" | "active" | "paused" | "completed";
 
 export type Campaign = {
   id: string;
+  organization_id?: string | null;
   name: string;
   equipment_type: string;
   region: string;

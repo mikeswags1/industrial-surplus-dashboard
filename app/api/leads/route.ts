@@ -1,57 +1,53 @@
 import { NextResponse } from "next/server";
 import {
-  leadInputToInsert,
-  leadRowToLead,
-  type LeadRow,
-} from "@/lib/db/mappers";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+  isDatabaseNotConfiguredError,
+  jsonDatabaseNotConfigured,
+} from "@/lib/api/database-error";
+import {
+  clampLeadListParams,
+  fetchLeads,
+  insertLeadRow,
+} from "@/lib/repositories/leads.repository";
+import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Lead } from "@/lib/types";
 
-export async function GET() {
-  const admin = getSupabaseAdmin();
-  if (!admin) {
-    return NextResponse.json(
-      { error: "not_configured", message: "Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY" },
-      { status: 501 }
+export async function GET(request: Request) {
+  try {
+    const admin = requireSupabaseAdmin();
+    const { searchParams } = new URL(request.url);
+    const { limit, offset } = clampLeadListParams(
+      searchParams.get("limit"),
+      searchParams.get("offset")
     );
+    const leads = await fetchLeads(admin, limit, offset);
+    return NextResponse.json({ leads, limit, offset });
+  } catch (e) {
+    if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
+    const msg = e instanceof Error ? e.message : "internal_error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  const { data, error } = await admin
-    .from("leads")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(2000);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  const leads = (data ?? []).map((r) => leadRowToLead(r as LeadRow));
-  return NextResponse.json({ leads });
 }
 
 export async function POST(request: Request) {
-  const admin = getSupabaseAdmin();
-  if (!admin) {
-    return NextResponse.json({ error: "not_configured" }, { status: 501 });
-  }
-
-  let body: unknown;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
+    const admin = requireSupabaseAdmin();
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
 
-  const input = body as Omit<Lead, "id" | "created_at" | "updated_at">;
-  if (!input?.company_name?.trim()) {
-    return NextResponse.json({ error: "company_name required" }, { status: 400 });
-  }
+    const input = body as Omit<Lead, "id" | "created_at" | "updated_at">;
+    if (!input?.company_name?.trim()) {
+      return NextResponse.json({ error: "company_name required" }, { status: 400 });
+    }
 
-  const row = leadInputToInsert(input);
-  const { data, error } = await admin.from("leads").insert(row).select("*").single();
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const lead = await insertLeadRow(admin, input);
+    return NextResponse.json({ lead });
+  } catch (e) {
+    if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
+    const msg = e instanceof Error ? e.message : "internal_error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-  return NextResponse.json({ lead: leadRowToLead(data as LeadRow) });
 }

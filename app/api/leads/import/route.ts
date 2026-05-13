@@ -1,15 +1,25 @@
 import { NextResponse } from "next/server";
-import { leadRowToLead, leadInputToInsert, type LeadRow } from "@/lib/db/mappers";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import {
+  isDatabaseNotConfiguredError,
+  jsonDatabaseNotConfigured,
+} from "@/lib/api/database-error";
+import { leadInputToInsert } from "@/lib/db/mappers";
 import {
   csvRowToLeadInput,
   normalizeDedupeKey,
   parseLeadCsv,
 } from "@/lib/leads/csv";
+import { queryExistingDedupeKeys } from "@/lib/repositories/leads.repository";
+import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
-  const admin = getSupabaseAdmin();
-  if (!admin) return NextResponse.json({ error: "not_configured" }, { status: 501 });
+  let admin;
+  try {
+    admin = requireSupabaseAdmin();
+  } catch (e) {
+    if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
+    throw e;
+  }
 
   let body: { csvText?: string; tag?: string };
   try {
@@ -39,17 +49,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: existing } = await admin
-    .from("leads")
-    .select("email, company_name")
-    .limit(5000);
-
-  const seen = new Set<string>();
-  for (const r of existing ?? []) {
-    const e = (r.email as string | null)?.trim();
-    const c = (r.company_name as string)?.trim();
-    if (e && c) seen.add(normalizeDedupeKey(e, c));
-  }
+  const seen = await queryExistingDedupeKeys(admin);
 
   let inserted = 0;
   let skipped = 0;

@@ -1,18 +1,33 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getSupabaseServerConfig } from "@/lib/env/server";
+import { parseSupabaseServerEnv } from "@/lib/env/server";
 
-let _admin: SupabaseClient | null | undefined;
+let _admin: SupabaseClient | undefined;
 
 /** Service-role client — server routes only. Bypasses RLS. */
 export function getSupabaseAdmin(): SupabaseClient | null {
-  if (_admin !== undefined) return _admin;
-  const cfg = getSupabaseServerConfig();
-  if (!cfg) {
-    _admin = null;
-    return _admin;
+  const p = parseSupabaseServerEnv();
+  if (!p.ok) {
+    _admin = undefined;
+    return null;
   }
-  _admin = createClient(cfg.url, cfg.serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  if (!_admin) {
+    _admin = createClient(p.value.url, p.value.serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
   return _admin;
+}
+
+export function requireSupabaseAdmin(): SupabaseClient {
+  const c = getSupabaseAdmin();
+  if (!c) {
+    const p = parseSupabaseServerEnv();
+    const detail = p.ok ? "unknown" : p.issues.join("; ");
+    throw new Error(`DATABASE_NOT_CONFIGURED: ${detail}`);
+  }
+  return c;
+}
+
+export function resetSupabaseAdminCache(): void {
+  _admin = undefined;
 }

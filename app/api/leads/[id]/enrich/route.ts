@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import {
+  isDatabaseNotConfiguredError,
+  jsonDatabaseNotConfigured,
+} from "@/lib/api/database-error";
 import { leadRowToLead, type LeadRow } from "@/lib/db/mappers";
 import { enrichFromWebsite } from "@/lib/enrichment/website";
+import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(_request: Request, ctx: Ctx) {
   const { id } = await ctx.params;
-  const admin = getSupabaseAdmin();
-  if (!admin) return NextResponse.json({ error: "not_configured" }, { status: 501 });
+  let admin;
+  try {
+    admin = requireSupabaseAdmin();
+  } catch (e) {
+    if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
+    throw e;
+  }
 
   const { data: lead, error } = await admin.from("leads").select("*").eq("id", id).single();
   if (error || !lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });

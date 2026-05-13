@@ -10,19 +10,16 @@ import {
   type ReactNode,
 } from "react";
 import type { Lead, LeadStatus } from "@/lib/types";
-import { newId, nowIso } from "@/lib/types";
 
-const STORAGE_KEY = "isd_leads_v2";
-
-export type LeadsDataSource = "loading" | "local" | "remote";
+export type LeadsDataSource = "loading" | "remote" | "unconfigured" | "error";
 
 type LeadsContextValue = {
   leads: Lead[];
   dataSource: LeadsDataSource;
+  /** Last API error when dataSource is "error" (e.g. 500). */
+  backendMessage: string | null;
   addLead: (input: Omit<Lead, "id" | "created_at" | "updated_at">) => Promise<void>;
   updateLead: (id: string, patch: Partial<Lead>) => Promise<void>;
-  /** Clears browser-stored leads (local mode only). */
-  resetToMock: () => void;
   refresh: () => Promise<void>;
   importFromCsvText: (
     csvText: string,
@@ -37,114 +34,90 @@ type LeadsContextValue = {
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
-function loadLocal(): Lead[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Lead[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed;
-  } catch {
-    return [];
-  }
+function isUnconfiguredStatus(status: number) {
+  return status === 503 || status === 501;
 }
 
 export function LeadsProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [dataSource, setDataSource] = useState<LeadsDataSource>("loading");
-  const [hydrated, setHydrated] = useState(false);
+  const [backendMessage, setBackendMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    setBackendMessage(null);
     const res = await fetch("/api/leads", { cache: "no-store" });
-    if (res.status === 501) {
-      setDataSource("local");
-      setLeads(loadLocal());
+    const json = (await res.json().catch(() => ({}))) as {
+      leads?: Lead[];
+      error?: string;
+      message?: string;
+    };
+
+    if (isUnconfiguredStatus(res.status)) {
+      setDataSource("unconfigured");
+      setLeads([]);
+      setBackendMessage(json.message ?? json.error ?? "Database not configured.");
       return;
     }
     if (!res.ok) {
-      setDataSource("local");
-      setLeads(loadLocal());
+      setDataSource("error");
+      setLeads([]);
+      setBackendMessage(json.message ?? json.error ?? `Request failed (${res.status})`);
       return;
     }
-    const json = (await res.json()) as { leads: Lead[] };
     setLeads(json.leads ?? []);
     setDataSource("remote");
   }, []);
 
   useEffect(() => {
-    setHydrated(true);
     void refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    if (!hydrated || dataSource !== "local") return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-  }, [leads, hydrated, dataSource]);
-
   const addLead = useCallback(
     async (input: Omit<Lead, "id" | "created_at" | "updated_at">) => {
-      if (dataSource === "remote") {
-        const res = await fetch("/api/leads", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(input),
-        });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error((j as { error?: string }).error || "Failed to create lead");
-        }
-        const { lead } = (await res.json()) as { lead: Lead };
-        setLeads((prev) => [lead, ...prev]);
-        return;
+      if (dataSource !== "remote") {
+        throw new Error(
+          "Cannot create leads until Supabase is configured (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)."
+        );
       }
-      const ts = nowIso();
-      const row: Lead = {
-        ...input,
-        id: newId(),
-        created_at: ts,
-        updated_at: ts,
-      };
-      setLeads((prev) => [row, ...prev]);
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to create lead");
+      }
+      const { lead } = (await res.json()) as { lead: Lead };
+      setLeads((prev) => [lead, ...prev]);
     },
     [dataSource]
   );
 
   const updateLead = useCallback(
     async (id: string, patch: Partial<Lead>) => {
-      if (dataSource === "remote") {
-        const res = await fetch(`/api/leads/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(patch),
-        });
-        if (!res.ok) {
-          const j = await res.json().catch(() => ({}));
-          throw new Error((j as { error?: string }).error || "Failed to update lead");
-        }
-        const { lead } = (await res.json()) as { lead: Lead };
-        setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
-        return;
+      if (dataSource !== "remote") {
+        throw new Error("Cannot update leads until the database API is available.");
       }
-      setLeads((prev) =>
-        prev.map((l) =>
-          l.id === id ? { ...l, ...patch, updated_at: nowIso() } : l
-        )
-      );
+      const res = await fetch(`/api/leads/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to update lead");
+      }
+      const { lead } = (await res.json()) as { lead: Lead };
+      setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
     },
     [dataSource]
   );
 
-  const resetToMock = useCallback(() => {
-    setLeads([]);
-    localStorage.removeItem(STORAGE_KEY);
-    setDataSource("local");
-  }, []);
-
   const importFromCsvText = useCallback(
     async (csvText: string, tag?: string) => {
       if (dataSource !== "remote") {
-        throw new Error("CSV import requires Supabase (server API). Configure keys and refresh.");
+        throw new Error("CSV import requires a configured Supabase backend.");
       }
       const res = await fetch("/api/leads/import", {
         method: "POST",
@@ -153,7 +126,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       });
       const json = await res.json();
       if (!res.ok) {
-        throw new Error((json as { error?: string }).error || "Import failed");
+        throw new Error((json as { error?: string }).error ?? "Import failed");
       }
       await refresh();
       return json as {
@@ -171,7 +144,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       const res = await fetch(`/api/leads/${id}/enrich`, { method: "POST" });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string }).error || "Enrich failed");
+        throw new Error((j as { error?: string }).error ?? "Enrich failed");
       }
       const { lead } = (await res.json()) as { lead: Lead };
       setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
@@ -183,9 +156,9 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     () => ({
       leads,
       dataSource,
+      backendMessage,
       addLead,
       updateLead,
-      resetToMock,
       refresh,
       importFromCsvText,
       enrichLead,
@@ -193,9 +166,9 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     [
       leads,
       dataSource,
+      backendMessage,
       addLead,
       updateLead,
-      resetToMock,
       refresh,
       importFromCsvText,
       enrichLead,

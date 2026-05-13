@@ -1,28 +1,8 @@
 import type { Lead, LeadStatus } from "@/lib/types";
 import { LEAD_STATUSES } from "@/lib/types";
+import type { LeadRow } from "@/lib/database/types";
 
-export type LeadRow = {
-  id: string;
-  company_name: string;
-  contact_name: string | null;
-  email: string | null;
-  phone: string | null;
-  website: string | null;
-  industry: string | null;
-  state: string | null;
-  city: string | null;
-  lead_source: string | null;
-  equipment_type: string | null;
-  estimated_value: number | null;
-  status: string;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  tags?: string[] | null;
-  company_summary?: string | null;
-  industry_detected?: string | null;
-  keywords?: string[] | null;
-};
+export type { LeadRow } from "@/lib/database/types";
 
 function coerceStatus(s: string): LeadStatus {
   return (LEAD_STATUSES as readonly string[]).includes(s)
@@ -52,6 +32,7 @@ export function leadRowToLead(row: LeadRow): Lead {
     company_summary: row.company_summary ?? null,
     industry_detected: row.industry_detected ?? null,
     keywords: row.keywords ?? [],
+    organization_id: row.organization_id ?? undefined,
   };
 }
 

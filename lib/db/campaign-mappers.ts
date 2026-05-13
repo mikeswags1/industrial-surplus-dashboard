@@ -1,21 +1,7 @@
 import type { Campaign, CampaignStatus } from "@/lib/types";
+import type { CampaignRow } from "@/lib/database/types";
 
-export type CampaignRow = {
-  id: string;
-  name: string;
-  equipment_type: string;
-  region: string;
-  primary_subject: string;
-  primary_body: string;
-  follow_up_1: string | null;
-  follow_up_2: string | null;
-  status: string;
-  emails_sent: number;
-  replies_count: number;
-  interested_count: number;
-  created_at: string;
-  updated_at: string;
-};
+export type { CampaignRow } from "@/lib/database/types";
 
 const STATUSES: CampaignStatus[] = ["draft", "active", "paused", "completed"];
 
@@ -26,6 +12,7 @@ function coerceCampaignStatus(s: string): CampaignStatus {
 export function campaignRowToCampaign(row: CampaignRow): Campaign {
   return {
     id: row.id,
+    organization_id: row.organization_id ?? undefined,
     name: row.name,
     equipment_type: row.equipment_type,
     region: row.region,
