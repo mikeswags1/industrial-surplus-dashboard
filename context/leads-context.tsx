@@ -15,16 +15,29 @@ import { MOCK_LEADS } from "@/lib/mock-leads";
 
 const STORAGE_KEY = "isd_leads_v1";
 
+export type LeadsDataSource = "loading" | "local" | "remote";
+
 type LeadsContextValue = {
   leads: Lead[];
-  addLead: (input: Omit<Lead, "id" | "created_at" | "updated_at">) => void;
-  updateLead: (id: string, patch: Partial<Lead>) => void;
+  dataSource: LeadsDataSource;
+  addLead: (input: Omit<Lead, "id" | "created_at" | "updated_at">) => Promise<void>;
+  updateLead: (id: string, patch: Partial<Lead>) => Promise<void>;
   resetToMock: () => void;
+  refresh: () => Promise<void>;
+  importFromCsvText: (
+    csvText: string,
+    tag?: string
+  ) => Promise<{
+    inserted: number;
+    skipped: number;
+    rowErrors: { line: number; message: string }[];
+  }>;
+  enrichLead: (id: string) => Promise<void>;
 };
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
-function loadInitial(): Lead[] {
+function loadLocal(): Lead[] {
   if (typeof window === "undefined") return MOCK_LEADS;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -39,20 +52,52 @@ function loadInitial(): Lead[] {
 
 export function LeadsProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [dataSource, setDataSource] = useState<LeadsDataSource>("loading");
   const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    setLeads(loadInitial());
-    setHydrated(true);
+  const refresh = useCallback(async () => {
+    const res = await fetch("/api/leads", { cache: "no-store" });
+    if (res.status === 501) {
+      setDataSource("local");
+      setLeads(loadLocal());
+      return;
+    }
+    if (!res.ok) {
+      setDataSource("local");
+      setLeads(loadLocal());
+      return;
+    }
+    const json = (await res.json()) as { leads: Lead[] };
+    setLeads(json.leads ?? []);
+    setDataSource("remote");
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    setHydrated(true);
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!hydrated || dataSource !== "local") return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-  }, [leads, hydrated]);
+  }, [leads, hydrated, dataSource]);
 
   const addLead = useCallback(
-    (input: Omit<Lead, "id" | "created_at" | "updated_at">) => {
+    async (input: Omit<Lead, "id" | "created_at" | "updated_at">) => {
+      if (dataSource === "remote") {
+        const res = await fetch("/api/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error((j as { error?: string }).error || "Failed to create lead");
+        }
+        const { lead } = (await res.json()) as { lead: Lead };
+        setLeads((prev) => [lead, ...prev]);
+        return;
+      }
       const ts = nowIso();
       const row: Lead = {
         ...input,
@@ -62,25 +107,99 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       };
       setLeads((prev) => [row, ...prev]);
     },
-    []
+    [dataSource]
   );
 
-  const updateLead = useCallback((id: string, patch: Partial<Lead>) => {
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === id ? { ...l, ...patch, updated_at: nowIso() } : l
-      )
-    );
-  }, []);
+  const updateLead = useCallback(
+    async (id: string, patch: Partial<Lead>) => {
+      if (dataSource === "remote") {
+        const res = await fetch(`/api/leads/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error((j as { error?: string }).error || "Failed to update lead");
+        }
+        const { lead } = (await res.json()) as { lead: Lead };
+        setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
+        return;
+      }
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === id ? { ...l, ...patch, updated_at: nowIso() } : l
+        )
+      );
+    },
+    [dataSource]
+  );
 
   const resetToMock = useCallback(() => {
     setLeads(MOCK_LEADS);
     localStorage.removeItem(STORAGE_KEY);
+    setDataSource("local");
   }, []);
 
+  const importFromCsvText = useCallback(
+    async (csvText: string, tag?: string) => {
+      if (dataSource !== "remote") {
+        throw new Error("CSV import requires Supabase (server API). Configure keys and refresh.");
+      }
+      const res = await fetch("/api/leads/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csvText, tag }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error((json as { error?: string }).error || "Import failed");
+      }
+      await refresh();
+      return json as {
+        inserted: number;
+        skipped: number;
+        rowErrors: { line: number; message: string }[];
+      };
+    },
+    [dataSource, refresh]
+  );
+
+  const enrichLead = useCallback(
+    async (id: string) => {
+      if (dataSource !== "remote") return;
+      const res = await fetch(`/api/leads/${id}/enrich`, { method: "POST" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string }).error || "Enrich failed");
+      }
+      const { lead } = (await res.json()) as { lead: Lead };
+      setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
+    },
+    [dataSource]
+  );
+
   const value = useMemo(
-    () => ({ leads, addLead, updateLead, resetToMock }),
-    [leads, addLead, updateLead, resetToMock]
+    () => ({
+      leads,
+      dataSource,
+      addLead,
+      updateLead,
+      resetToMock,
+      refresh,
+      importFromCsvText,
+      enrichLead,
+    }),
+    [
+      leads,
+      dataSource,
+      addLead,
+      updateLead,
+      resetToMock,
+      refresh,
+      importFromCsvText,
+      enrichLead,
+    ]
   );
 
   return (

@@ -3,6 +3,10 @@
 import { StatCard } from "@/components/stat-card";
 import { useLeads, countByStatus, pipelineValue } from "@/context/leads-context";
 import { useCampaigns } from "@/context/campaigns-context";
+import {
+  aggregateIndustry,
+  aggregateLeadsByState,
+} from "@/lib/analytics/from-leads";
 
 function formatUsd(n: number) {
   return n.toLocaleString(undefined, {
@@ -10,6 +14,22 @@ function formatUsd(n: number) {
     currency: "USD",
     maximumFractionDigits: 0,
   });
+}
+
+function BarRow({ label, value, max }: { label: string; value: number; max: number }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <div className="w-10 text-right tabular-nums text-zinc-500">{label}</div>
+      <div className="flex-1 h-2 rounded-full bg-[var(--color-surface-2)] overflow-hidden">
+        <div
+          className="h-full rounded-full bg-[var(--color-accent)]"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="w-8 text-right tabular-nums text-zinc-300">{value}</div>
+    </div>
+  );
 }
 
 export default function AnalyticsPage() {
@@ -24,13 +44,20 @@ export default function AnalyticsPage() {
   const interestRate =
     emailsSent > 0 ? Math.round((interested / emailsSent) * 1000) / 10 : 0;
 
+  const byState = aggregateLeadsByState(leads).slice(0, 12);
+  const maxState = byState[0]?.count ?? 0;
+  const byIndustry = aggregateIndustry(leads);
+  const maxInd = byIndustry[0]?.count ?? 0;
+
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
         <p className="mt-1 text-sm text-zinc-500 max-w-2xl">
-          Lightweight KPIs from the in-browser MVP store. Replace with Supabase
-          aggregates and Resend webhooks when outbound is live.
+          KPIs from leads and campaigns. Outbound email totals will align with
+          Outbound email totals will align with{" "}
+          <code className="text-zinc-400">outreach_logs</code> once workers drain
+          the send queue.
         </p>
       </header>
 
@@ -57,13 +84,41 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      <section className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)]/50 p-6 text-sm text-zinc-500">
-        <p>
-          Charting (funnels, cohorts, geo heatmaps) is intentionally deferred.
-          The next step is persisting events from Resend and ad platforms into
-          Supabase, then charting with your preferred library.
-        </p>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3">
+          <h2 className="text-sm font-medium text-zinc-300">Leads by state</h2>
+          {byState.length === 0 ? (
+            <p className="text-sm text-zinc-500">No leads yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {byState.map((r) => (
+                <BarRow key={r.state} label={r.state} value={r.count} max={maxState} />
+              ))}
+            </div>
+          )}
+        </section>
+        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3">
+          <h2 className="text-sm font-medium text-zinc-300">Top industries</h2>
+          <p className="text-xs text-zinc-600">
+            Uses enriched <code className="text-zinc-500">industry_detected</code> when
+            present, else manual industry field.
+          </p>
+          {byIndustry.length === 0 ? (
+            <p className="text-sm text-zinc-500">No industry data yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {byIndustry.map((r, i) => (
+                <BarRow
+                  key={`${r.label}-${i}`}
+                  label={r.label.slice(0, 14)}
+                  value={r.count}
+                  max={maxInd}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

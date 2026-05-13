@@ -14,6 +14,8 @@ import { newId, nowIso } from "@/lib/types";
 
 const STORAGE_KEY = "isd_campaigns_v1";
 
+export type CampaignsDataSource = "loading" | "local" | "remote";
+
 const SEED: Campaign[] = [
   {
     id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -36,13 +38,21 @@ const SEED: Campaign[] = [
 
 type CampaignsContextValue = {
   campaigns: Campaign[];
-  addCampaign: (input: Omit<Campaign, "id" | "created_at" | "updated_at">) => void;
-  updateCampaign: (id: string, patch: Partial<Campaign>) => void;
+  dataSource: CampaignsDataSource;
+  addCampaign: (input: Omit<Campaign, "id" | "created_at" | "updated_at">) => Promise<void>;
+  updateCampaign: (id: string, patch: Partial<Campaign>) => Promise<void>;
+  refresh: () => Promise<void>;
+  /** Enqueue leads for step-0 sends (requires Supabase queue table). */
+  queueCampaignSends: (campaignId: string, leadIds: string[]) => Promise<{
+    queued: number;
+    requested: number;
+    capped: boolean;
+  }>;
 };
 
 const CampaignsContext = createContext<CampaignsContextValue | null>(null);
 
-function loadInitial(): Campaign[] {
+function loadLocal(): Campaign[] {
   if (typeof window === "undefined") return SEED;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -57,20 +67,52 @@ function loadInitial(): Campaign[] {
 
 export function CampaignsProvider({ children }: { children: ReactNode }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(SEED);
+  const [dataSource, setDataSource] = useState<CampaignsDataSource>("loading");
   const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
-    setCampaigns(loadInitial());
-    setHydrated(true);
+  const refresh = useCallback(async () => {
+    const res = await fetch("/api/campaigns", { cache: "no-store" });
+    if (res.status === 501) {
+      setDataSource("local");
+      setCampaigns(loadLocal());
+      return;
+    }
+    if (!res.ok) {
+      setDataSource("local");
+      setCampaigns(loadLocal());
+      return;
+    }
+    const json = (await res.json()) as { campaigns: Campaign[] };
+    setCampaigns(json.campaigns ?? []);
+    setDataSource("remote");
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
+    setHydrated(true);
+    void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!hydrated || dataSource !== "local") return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(campaigns));
-  }, [campaigns, hydrated]);
+  }, [campaigns, hydrated, dataSource]);
 
   const addCampaign = useCallback(
-    (input: Omit<Campaign, "id" | "created_at" | "updated_at">) => {
+    async (input: Omit<Campaign, "id" | "created_at" | "updated_at">) => {
+      if (dataSource === "remote") {
+        const res = await fetch("/api/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error((j as { error?: string }).error || "Failed to save campaign");
+        }
+        const { campaign } = (await res.json()) as { campaign: Campaign };
+        setCampaigns((prev) => [campaign, ...prev]);
+        return;
+      }
       const ts = nowIso();
       const row: Campaign = {
         ...input,
@@ -80,20 +122,63 @@ export function CampaignsProvider({ children }: { children: ReactNode }) {
       };
       setCampaigns((prev) => [row, ...prev]);
     },
-    []
+    [dataSource]
   );
 
-  const updateCampaign = useCallback((id: string, patch: Partial<Campaign>) => {
-    setCampaigns((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, ...patch, updated_at: nowIso() } : c
-      )
-    );
-  }, []);
+  const updateCampaign = useCallback(
+    async (id: string, patch: Partial<Campaign>) => {
+      if (dataSource === "remote") {
+        const res = await fetch(`/api/campaigns/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error((j as { error?: string }).error || "Failed to update campaign");
+        }
+        const { campaign } = (await res.json()) as { campaign: Campaign };
+        setCampaigns((prev) => prev.map((c) => (c.id === id ? campaign : c)));
+        return;
+      }
+      setCampaigns((prev) =>
+        prev.map((c) =>
+          c.id === id ? { ...c, ...patch, updated_at: nowIso() } : c
+        )
+      );
+    },
+    [dataSource]
+  );
+
+  const queueCampaignSends = useCallback(
+    async (campaignId: string, leadIds: string[]) => {
+      if (dataSource !== "remote") {
+        throw new Error("Queue requires Supabase.");
+      }
+      const res = await fetch(`/api/campaigns/${campaignId}/queue`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error((json as { error?: string }).error || "Queue failed");
+      }
+      return json as { queued: number; requested: number; capped: boolean };
+    },
+    [dataSource]
+  );
 
   const value = useMemo(
-    () => ({ campaigns, addCampaign, updateCampaign }),
-    [campaigns, addCampaign, updateCampaign]
+    () => ({
+      campaigns,
+      dataSource,
+      addCampaign,
+      updateCampaign,
+      refresh,
+      queueCampaignSends,
+    }),
+    [campaigns, dataSource, addCampaign, updateCampaign, refresh, queueCampaignSends]
   );
 
   return (

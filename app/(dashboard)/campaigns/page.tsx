@@ -67,21 +67,26 @@ export default function CampaignsPage() {
       /* template fallback already set */
     }
 
-    addCampaign({
-      name: name.trim(),
-      equipment_type: equipment,
-      region,
-      primary_subject: subject,
-      primary_body: body,
-      follow_up_1: follow1,
-      follow_up_2: follow2,
-      status: "draft",
-      emails_sent: 0,
-      replies_count: 0,
-      interested_count: 0,
-    });
-    setName("");
-    setRegionCustom("");
+    try {
+      await addCampaign({
+        name: name.trim(),
+        equipment_type: equipment,
+        region,
+        primary_subject: subject,
+        primary_body: body,
+        follow_up_1: follow1,
+        follow_up_2: follow2,
+        status: "draft",
+        emails_sent: 0,
+        replies_count: 0,
+        interested_count: 0,
+      });
+      setName("");
+      setRegionCustom("");
+    } catch (er) {
+      console.error(er);
+      alert(er instanceof Error ? er.message : "Could not save campaign");
+    }
   }
 
   return (
@@ -197,7 +202,7 @@ export default function CampaignsPage() {
                   className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1 text-xs"
                   value={c.status}
                   onChange={(e) =>
-                    updateCampaign(c.id, {
+                    void updateCampaign(c.id, {
                       status: e.target.value as CampaignStatus,
                     })
                   }
@@ -245,7 +250,7 @@ export default function CampaignsPage() {
                   type="button"
                   className="rounded-md border border-[var(--color-border)] px-2 py-1 text-xs text-zinc-300 hover:bg-[var(--color-surface-2)]"
                   onClick={() =>
-                    updateCampaign(c.id, {
+                    void updateCampaign(c.id, {
                       emails_sent: c.emails_sent + 5,
                     })
                   }
@@ -256,7 +261,7 @@ export default function CampaignsPage() {
                   type="button"
                   className="rounded-md border border-[var(--color-border)] px-2 py-1 text-xs text-zinc-300 hover:bg-[var(--color-surface-2)]"
                   onClick={() =>
-                    updateCampaign(c.id, {
+                    void updateCampaign(c.id, {
                       replies_count: c.replies_count + 1,
                     })
                   }
@@ -267,7 +272,7 @@ export default function CampaignsPage() {
                   type="button"
                   className="rounded-md border border-[var(--color-border)] px-2 py-1 text-xs text-zinc-300 hover:bg-[var(--color-surface-2)]"
                   onClick={() =>
-                    updateCampaign(c.id, {
+                    void updateCampaign(c.id, {
                       interested_count: c.interested_count + 1,
                     })
                   }

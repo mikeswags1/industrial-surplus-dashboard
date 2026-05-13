@@ -61,6 +61,11 @@ export type Lead = {
   notes: string;
   created_at: string;
   updated_at: string;
+  /** Derived / manual tags (e.g. import batch, equipment family) */
+  tags?: string[];
+  company_summary?: string | null;
+  industry_detected?: string | null;
+  keywords?: string[];
 };
 
 export type CampaignStatus = "draft" | "active" | "paused" | "completed";

@@ -6,7 +6,7 @@ import { LEAD_STATUSES, EQUIPMENT_TYPES, US_STATES } from "@/lib/types";
 import { useLeads } from "@/context/leads-context";
 
 export function LeadsTable() {
-  const { leads, updateLead } = useLeads();
+  const { leads, updateLead, dataSource, enrichLead } = useLeads();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<LeadStatus | "All">("All");
   const [state, setState] = useState<string>("All");
@@ -103,6 +103,7 @@ export function LeadsTable() {
               <th className="px-3 py-3 font-medium">Equipment</th>
               <th className="px-3 py-3 font-medium">Est. value</th>
               <th className="px-3 py-3 font-medium">Status</th>
+              <th className="px-3 py-3 font-medium w-28">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
@@ -133,11 +134,11 @@ export function LeadsTable() {
                   <select
                     className="max-w-[160px] rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1 text-xs"
                     value={l.status}
-                    onChange={(e) =>
-                      updateLead(l.id, {
+                    onChange={(e) => {
+                      void updateLead(l.id, {
                         status: e.target.value as LeadStatus,
-                      })
-                    }
+                      });
+                    }}
                   >
                     {LEAD_STATUSES.map((s) => (
                       <option key={s} value={s}>
@@ -145,6 +146,23 @@ export function LeadsTable() {
                       </option>
                     ))}
                   </select>
+                </td>
+                <td className="px-3 py-3 align-top">
+                  {dataSource === "remote" && l.website?.trim() ? (
+                    <button
+                      type="button"
+                      className="text-xs text-[var(--color-accent)] hover:underline"
+                      onClick={() =>
+                        void enrichLead(l.id).catch((e) =>
+                          alert(e instanceof Error ? e.message : "Enrich failed")
+                        )
+                      }
+                    >
+                      Enrich
+                    </button>
+                  ) : (
+                    <span className="text-xs text-zinc-600">—</span>
+                  )}
                 </td>
               </tr>
             ))}

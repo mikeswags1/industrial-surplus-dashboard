@@ -25,13 +25,23 @@ export function AddLeadModal() {
   const { addLead } = useLeads();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!form.company_name.trim() || !form.email.trim()) return;
-    addLead(form);
-    setForm(empty);
-    setOpen(false);
+    setSaving(true);
+    setErr(null);
+    try {
+      await addLead(form);
+      setForm(empty);
+      setOpen(false);
+    } catch (er) {
+      setErr(er instanceof Error ? er.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -226,6 +236,11 @@ export function AddLeadModal() {
                   }
                 />
               </label>
+              {err ? (
+                <p className="sm:col-span-2 text-sm text-red-400" role="alert">
+                  {err}
+                </p>
+              ) : null}
               <div className="sm:col-span-2 flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -236,9 +251,10 @@ export function AddLeadModal() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)]"
+                  disabled={saving}
+                  className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
                 >
-                  Save lead
+                  {saving ? "Saving…" : "Save lead"}
                 </button>
               </div>
             </form>

@@ -33,8 +33,8 @@ export default function OverviewPage() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
         <p className="mt-1 text-sm text-zinc-500 max-w-2xl">
-          Snapshot of the lead pipeline and outbound activity. Data is stored
-          locally in the browser for the MVP until Supabase sync is wired.
+          Snapshot of the lead pipeline and outbound activity. Data comes from
+          Supabase when configured, otherwise the in-browser store.
         </p>
       </header>
 
