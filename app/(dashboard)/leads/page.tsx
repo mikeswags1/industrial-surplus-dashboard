@@ -1,3 +1,5 @@
+"use client";
+
 import { AddLeadModal } from "@/components/add-lead-modal";
 import { ImportLeadsCsv } from "@/components/import-leads-csv";
 import { LeadsTable } from "@/components/leads-table";
