@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  --color-surface-0: #0a0b0d;
+  --color-surface-1: #111318;
+  --color-surface-2: #181b22;
+  --color-surface-3: #22262f;
+  --color-border: #2a2f3a;
+  --color-accent: #c45c26;
+  --color-accent-muted: #e07a3d;
+  --color-muted: #8b92a3;
+}
+
+body {
+  @apply bg-[var(--color-surface-0)] text-zinc-100 antialiased;
+}
+
+/* subtle scrollbar for tables */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-zinc-700;
+}
