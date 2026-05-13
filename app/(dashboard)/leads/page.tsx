@@ -13,8 +13,8 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            Filter and update statuses. Add rows or import CSV when the database
-            is connected.
+            Only real leads you add, import, or load from Supabase appear here. No
+            bundled demo companies.
           </p>
           <p className="mt-1 text-xs text-zinc-600">
             Data:{" "}

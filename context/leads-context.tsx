@@ -11,9 +11,8 @@ import {
 } from "react";
 import type { Lead, LeadStatus } from "@/lib/types";
 import { newId, nowIso } from "@/lib/types";
-import { MOCK_LEADS } from "@/lib/mock-leads";
 
-const STORAGE_KEY = "isd_leads_v1";
+const STORAGE_KEY = "isd_leads_v2";
 
 export type LeadsDataSource = "loading" | "local" | "remote";
 
@@ -22,6 +21,7 @@ type LeadsContextValue = {
   dataSource: LeadsDataSource;
   addLead: (input: Omit<Lead, "id" | "created_at" | "updated_at">) => Promise<void>;
   updateLead: (id: string, patch: Partial<Lead>) => Promise<void>;
+  /** Clears browser-stored leads (local mode only). */
   resetToMock: () => void;
   refresh: () => Promise<void>;
   importFromCsvText: (
@@ -38,20 +38,20 @@ type LeadsContextValue = {
 const LeadsContext = createContext<LeadsContextValue | null>(null);
 
 function loadLocal(): Lead[] {
-  if (typeof window === "undefined") return MOCK_LEADS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return MOCK_LEADS;
+    if (!raw) return [];
     const parsed = JSON.parse(raw) as Lead[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return MOCK_LEADS;
+    if (!Array.isArray(parsed)) return [];
     return parsed;
   } catch {
-    return MOCK_LEADS;
+    return [];
   }
 }
 
 export function LeadsProvider({ children }: { children: ReactNode }) {
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [dataSource, setDataSource] = useState<LeadsDataSource>("loading");
   const [hydrated, setHydrated] = useState(false);
 
@@ -136,7 +136,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   );
 
   const resetToMock = useCallback(() => {
-    setLeads(MOCK_LEADS);
+    setLeads([]);
     localStorage.removeItem(STORAGE_KEY);
     setDataSource("local");
   }, []);

@@ -77,15 +77,16 @@ export default function SettingsPage() {
       <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3 text-sm">
         <h2 className="text-sm font-medium text-zinc-300">Local browser store</h2>
         <p className="text-zinc-500">
-          When Supabase is not configured, leads fall back to{" "}
-          <code className="text-zinc-400">localStorage</code>. Reset restores the seed list.
+          When Supabase is not configured, leads are stored in{" "}
+          <code className="text-zinc-400">localStorage</code> only. This clears that
+          copy (does not delete rows in Supabase).
         </p>
         <button
           type="button"
           onClick={resetToMock}
           className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-zinc-200 hover:bg-[var(--color-surface-2)]"
         >
-          Reset leads to sample data
+          Clear local leads
         </button>
       </section>
     </div>

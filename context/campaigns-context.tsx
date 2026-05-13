@@ -12,29 +12,9 @@ import {
 import type { Campaign, CampaignStatus } from "@/lib/types";
 import { newId, nowIso } from "@/lib/types";
 
-const STORAGE_KEY = "isd_campaigns_v1";
+const STORAGE_KEY = "isd_campaigns_v2";
 
 export type CampaignsDataSource = "loading" | "local" | "remote";
-
-const SEED: Campaign[] = [
-  {
-    id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-    name: "Q2 Forklifts — Southeast",
-    equipment_type: "Forklifts",
-    region: "GA, AL, SC",
-    primary_subject: "Quick cash quote for idle forklifts",
-    primary_body:
-      "We buy surplus forklifts nationwide with fast evaluations and coordinated pickup.",
-    follow_up_1: "Following up — still interested in a quote?",
-    follow_up_2: "Last note — we can close quickly if timing works.",
-    status: "draft",
-    emails_sent: 0,
-    replies_count: 0,
-    interested_count: 0,
-    created_at: "2026-05-01T10:00:00.000Z",
-    updated_at: "2026-05-01T10:00:00.000Z",
-  },
-];
 
 type CampaignsContextValue = {
   campaigns: Campaign[];
@@ -53,20 +33,20 @@ type CampaignsContextValue = {
 const CampaignsContext = createContext<CampaignsContextValue | null>(null);
 
 function loadLocal(): Campaign[] {
-  if (typeof window === "undefined") return SEED;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return SEED;
+    if (!raw) return [];
     const parsed = JSON.parse(raw) as Campaign[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return SEED;
+    if (!Array.isArray(parsed)) return [];
     return parsed;
   } catch {
-    return SEED;
+    return [];
   }
 }
 
 export function CampaignsProvider({ children }: { children: ReactNode }) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(SEED);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [dataSource, setDataSource] = useState<CampaignsDataSource>("loading");
   const [hydrated, setHydrated] = useState(false);
 
