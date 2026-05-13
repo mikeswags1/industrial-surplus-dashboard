@@ -8,6 +8,7 @@ Internal MVP dashboard for discovering surplus sellers, planning cold email and 
 - **Tailwind CSS v4**
 - **Supabase** (schema in `supabase/schema.sql`; client helper in `lib/supabase/client.ts`)
 - **OpenAI** (optional) for `/api/generate-email` and `/api/generate-ads`
+- **Google Places API** for real-source Lead Finder searches
 - **Resend** (dependency only for now — wire sends in a follow-up)
 - **Vercel** (recommended hosting)
 
@@ -37,11 +38,14 @@ Internal MVP dashboard for discovering surplus sellers, planning cold email and 
    | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser-safe anon key |
    | `OPENAI_API_KEY` | Enables AI-generated email/ad copy (otherwise templates run) |
+   | `GOOGLE_PLACES_API_KEY` | Enables Lead Finder real provider search (server-only) |
    | `RESEND_API_KEY` | Reserved for transactional email sending |
+
+   For Lead Finder, create a Google Cloud API key with the Places API enabled and billing active, then store it as `GOOGLE_PLACES_API_KEY` only on the server / Vercel environment.
 
 3. **Database**
 
-   In the Supabase SQL editor, run `supabase/schema.sql`. When Row Level Security is enabled, connect the app with Supabase Auth (or use the service role from trusted server routes only).
+   In the Supabase SQL editor, run `supabase/schema.sql`, then migrations in order from `supabase/migrations/`. When Row Level Security is enabled, connect the app with Supabase Auth (or use the service role from trusted server routes only).
 
 4. **Development server**
 
@@ -72,7 +76,8 @@ To copy only without pushing, omit `-Push`.
 
 ## MVP behavior
 
-- **Leads** and **campaigns** persist in the browser (`localStorage`) so the UI works before Supabase wiring.
+- **Leads** and **campaigns** persist through Supabase-backed server API routes when server env vars are configured.
+- **Lead Finder** uses Google Places for real company candidates, optional website enrichment, and AI/heuristic scoring before user approval into leads. It never creates fake sample leads.
 - **AI routes** return deterministic templates when `OPENAI_API_KEY` is missing.
 - **Collaboration** notes for agents live in `COLLAB.md`.
 
@@ -118,6 +123,7 @@ Continuous deploys on every push to your main branch.
    | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview | Optional until Supabase is wired |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production, Preview | Optional until Supabase is wired |
    | `OPENAI_API_KEY` | Production, Preview | Optional; templates run if empty |
+   | `GOOGLE_PLACES_API_KEY` | Production, Preview | Required for Lead Finder real searches |
    | `RESEND_API_KEY` | Production | Optional until email send is implemented |
 
    Redeploy after adding variables (**Deployments** → … on latest → **Redeploy**), or push a new commit.

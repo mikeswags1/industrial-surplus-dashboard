@@ -42,6 +42,50 @@ export type LeadRow = {
   enrichment_at: string | null;
 };
 
+export type LeadFinderRunRow = {
+  id: string;
+  organization_id: string;
+  provider: "google_places";
+  status: "running" | "completed" | "failed";
+  state: string;
+  city: string;
+  industry: string;
+  equipment_type: string;
+  requested_count: number;
+  result_count: number;
+  approved_count: number;
+  error: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type LeadFinderCandidateRow = {
+  id: string;
+  organization_id: string;
+  run_id: string;
+  provider: "google_places";
+  provider_place_id: string | null;
+  company_name: string;
+  website: string | null;
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  state: string | null;
+  formatted_address: string | null;
+  industry: string | null;
+  source_url: string | null;
+  raw_provider: Record<string, unknown>;
+  enrichment_summary: string | null;
+  enrichment_source_url: string | null;
+  keywords: string[] | null;
+  score: number | null;
+  score_source: "ai" | "heuristic" | "unscored";
+  score_explanation: string | null;
+  status: "preview" | "approved" | "rejected" | "duplicate" | "error";
+  lead_id: string | null;
+  created_at: string;
+};
+
 export type CampaignRow = {
   id: string;
   organization_id: string | null;

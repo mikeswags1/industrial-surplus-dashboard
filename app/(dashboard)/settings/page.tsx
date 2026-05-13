@@ -42,6 +42,10 @@ export default function SettingsPage() {
             <code className="text-zinc-300">OPENAI_API_KEY</code> — AI email / ad copy
           </li>
           <li>
+            <code className="text-zinc-300">GOOGLE_PLACES_API_KEY</code> —{" "}
+            <span className="text-zinc-500">server only</span>; powers real Lead Finder provider search
+          </li>
+          <li>
             <code className="text-zinc-300">RESEND_API_KEY</code> +{" "}
             <code className="text-zinc-300">RESEND_FROM_EMAIL</code> — outbound sends (
             <code className="text-zinc-400">/api/send-email</code>)
@@ -55,8 +59,8 @@ export default function SettingsPage() {
           <code className="text-zinc-400">.env.local</code> and fill values. Run{" "}
           <code className="text-zinc-400">supabase/schema.sql</code>, then{" "}
           <code className="text-zinc-400">supabase/migrations/002_outbound_platform.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/003_production_core.sql</code> in the Supabase SQL
-          editor.
+          <code className="text-zinc-400">supabase/migrations/003_production_core.sql</code>, then{" "}
+          <code className="text-zinc-400">supabase/migrations/004_lead_finder.sql</code> in the Supabase SQL editor.
         </p>
       </section>
 

@@ -16,6 +16,10 @@ const resendSchema = z.object({
   from: z.string().min(3),
 });
 
+const googlePlacesSchema = z.object({
+  apiKey: z.string().min(1),
+});
+
 export type SupabaseServerConfig = z.infer<typeof supabaseServerSchema>;
 
 export function parseSupabaseServerEnv():
@@ -70,6 +74,12 @@ export function getResendConfig(): { apiKey: string; from: string } | null {
   return p.ok ? p.value : null;
 }
 
+export function getGooglePlacesConfig(): { apiKey: string } | null {
+  const raw = { apiKey: process.env.GOOGLE_PLACES_API_KEY?.trim() };
+  const r = googlePlacesSchema.safeParse(raw);
+  return r.success ? r.data : null;
+}
+
 export function isOpenAiConfigured(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
@@ -79,6 +89,7 @@ export function getServerHealthSnapshot(): {
   supabase: "ok" | "missing";
   resend: "ok" | "missing";
   openai: "ok" | "missing";
+  googlePlaces: "ok" | "missing";
   issues: string[];
 } {
   const issues: string[] = [];
@@ -91,6 +102,7 @@ export function getServerHealthSnapshot(): {
     supabase: sb.ok ? "ok" : "missing",
     resend: rs.ok ? "ok" : "missing",
     openai: isOpenAiConfigured() ? "ok" : "missing",
+    googlePlaces: getGooglePlacesConfig() ? "ok" : "missing",
     issues,
   };
 }

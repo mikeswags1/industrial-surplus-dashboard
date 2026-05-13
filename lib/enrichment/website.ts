@@ -16,6 +16,7 @@ export type WebsiteEnrichment = {
   industry_detected: string;
   keywords: string[];
   source_url: string;
+  public_emails?: string[];
 };
 
 function stripTags(html: string) {
@@ -57,6 +58,11 @@ export async function enrichFromWebsite(url: string): Promise<WebsiteEnrichment>
 
   const text = stripTags(html).toLowerCase();
   const snippet = pickDescription(html) || stripTags(html).slice(0, 400);
+  const public_emails = Array.from(
+    new Set(
+      html.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)?.map((e) => e.toLowerCase()) ?? []
+    )
+  ).slice(0, 3);
 
   let industry_detected = "Unknown";
   let best = 0;
@@ -82,5 +88,6 @@ export async function enrichFromWebsite(url: string): Promise<WebsiteEnrichment>
     industry_detected,
     keywords,
     source_url: normalized,
+    public_emails,
   };
 }
