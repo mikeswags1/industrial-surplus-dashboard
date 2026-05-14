@@ -49,16 +49,12 @@ export function isGooglePlacesNotConfiguredError(err: unknown): boolean {
 }
 
 function buildTextQuery(input: LeadFinderSearchInput) {
-  const parts = [
-    input.industry.trim(),
-    input.equipment_type.trim(),
-    "industrial company",
-    "surplus equipment",
-    input.city.trim(),
-    input.state.trim(),
-    "USA",
-  ].filter(Boolean);
-  return parts.join(" ");
+  const preset = presetForTargetIndustryLabel(input.target_industry);
+  const phrase = preset?.placesQueryPhrase ?? input.target_industry.trim();
+  const city = input.city.trim();
+  const state = input.state.trim();
+  /** Buy-side: preset phrase + geo (avoid surplus-buyer wording that surfaces competitors). */
+  return `${phrase} in ${city}, ${state}`;
 }
 
 function normalizePlace(

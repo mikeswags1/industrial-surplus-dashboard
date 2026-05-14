@@ -190,7 +190,6 @@ function mergeLikely(
   const hinted: string[] = [];
   const low = text.toLowerCase();
   for (const tag of ASSET_TAGS) {
-    const key = tag.split("/")[0].trim().toLowerCase();
     if (low.includes("scrap") && tag.includes("Scrap")) hinted.push(tag);
     if (
       low.includes("valve") &&
