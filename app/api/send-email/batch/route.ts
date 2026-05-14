@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getResendConfig } from "@/lib/env/server";
 import { sendWithResend } from "@/lib/email/resend-send";
+import { resolveOutboundIdentity } from "@/lib/repositories/inboxes.repository";
 import {
   countSendEventsForLead,
   updateLeadRow,
@@ -105,11 +106,15 @@ export async function POST(request: Request) {
       }
     }
 
+    const identity = await resolveOutboundIdentity(admin, lead.organization_id ?? null);
+
     const sent = await sendWithResend({
       to,
       subject,
       html,
       text: textBody || html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      from: identity.from,
+      replyTo: identity.replyTo,
     });
 
     if (!sent.ok) {
@@ -122,7 +127,7 @@ export async function POST(request: Request) {
       provider: "resend",
       provider_message_id: sent.id,
       to_email: to,
-      from_email: cfg.from,
+      from_email: identity.from,
       subject,
       body_preview: html.replace(/<[^>]+>/g, " ").slice(0, 240),
       lead_id: leadId,

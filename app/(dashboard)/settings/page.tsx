@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
 import { useLeads } from "@/context/leads-context";
 import { useCampaigns } from "@/context/campaigns-context";
 
@@ -15,6 +17,61 @@ export default function SettingsPage() {
     useLeads();
   const { dataSource: campMode, backendMessage: campErr, refresh: refreshCamp } =
     useCampaigns();
+
+  const [inboxDisplay, setInboxDisplay] = useState("");
+  const [inboxFrom, setInboxFrom] = useState("");
+  const [inboxReplyTo, setInboxReplyTo] = useState("");
+  const [inboxLoading, setInboxLoading] = useState(false);
+  const [inboxSaving, setInboxSaving] = useState(false);
+  const [inboxErr, setInboxErr] = useState<string | null>(null);
+  const [inboxOk, setInboxOk] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (leadsMode !== "remote") return;
+    setInboxLoading(true);
+    setInboxErr(null);
+    void fetch("/api/inboxes", { cache: "no-store" })
+      .then(async (r) => {
+        const j = (await r.json()) as {
+          inboxes?: { from_email: string; reply_to_email: string | null; display_name: string }[];
+          error?: string;
+        };
+        if (!r.ok) throw new Error(j.error ?? "Could not load inbox");
+        const row = j.inboxes?.[0];
+        if (row) {
+          setInboxFrom(row.from_email);
+          setInboxReplyTo(row.reply_to_email?.trim() ?? "");
+          setInboxDisplay(row.display_name ?? "");
+        }
+      })
+      .catch((e) => setInboxErr(e instanceof Error ? e.message : "Load failed"))
+      .finally(() => setInboxLoading(false));
+  }, [leadsMode]);
+
+  async function saveInbox(e: FormEvent) {
+    e.preventDefault();
+    setInboxSaving(true);
+    setInboxErr(null);
+    setInboxOk(null);
+    try {
+      const res = await fetch("/api/inboxes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: inboxDisplay.trim() || "Outbound",
+          fromEmail: inboxFrom.trim(),
+          replyToEmail: inboxReplyTo.trim() || null,
+        }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error((j as { error?: string }).error ?? "Save failed");
+      setInboxOk("Saved. New sends use this address (domain must stay verified in Resend).");
+    } catch (e) {
+      setInboxErr(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setInboxSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-8 max-w-2xl">
@@ -47,8 +104,14 @@ export default function SettingsPage() {
           </li>
           <li>
             <code className="text-zinc-300">RESEND_API_KEY</code> +{" "}
-            <code className="text-zinc-300">RESEND_FROM_EMAIL</code> — outbound sends (
-            <code className="text-zinc-400">/api/send-email</code>)
+            <code className="text-zinc-300">RESEND_FROM_EMAIL</code> — required API key;{" "}
+            <span className="text-zinc-500">
+              from address fallback when no row exists in <code className="text-zinc-400">inboxes</code>
+            </span>{" "}
+            (<Link href="#outbound-sender" className="text-[var(--color-accent)] hover:underline">
+              configure below
+            </Link>
+            )
           </li>
           <li>
             <code className="text-zinc-300">OUTBOUND_MAX_SENDS_PER_HOUR</code> — optional cap (default 100)
@@ -64,6 +127,77 @@ export default function SettingsPage() {
           <code className="text-zinc-400">supabase/migrations/005_lead_finder_buy_side.sql</code>, then{" "}
           <code className="text-zinc-400">supabase/migrations/006_leads_target_assets.sql</code> in the Supabase SQL editor.
         </p>
+      </section>
+
+      <section
+        id="outbound-sender"
+        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4 text-sm"
+      >
+        <div>
+          <h2 className="text-sm font-medium text-zinc-300">Outbound sender (client email)</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            Stored in Supabase <code className="text-zinc-400">inboxes</code>. Must match an address
+            or domain you have verified in{" "}
+            <a
+              className="text-[var(--color-accent)] hover:underline"
+              href="https://resend.com/domains"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Resend
+            </a>
+            . Leads use their workspace <code className="text-zinc-500">organization_id</code> to pick
+            the right identity; this form edits the default workspace.
+          </p>
+        </div>
+
+        {leadsMode !== "remote" ? (
+          <p className="text-xs text-zinc-600">Connect Supabase to edit the sending identity.</p>
+        ) : inboxLoading ? (
+          <p className="text-zinc-500 text-xs">Loading…</p>
+        ) : (
+          <form onSubmit={saveInbox} className="space-y-3 max-w-lg">
+            <label className="flex flex-col gap-1">
+              <span className="text-zinc-400 text-xs">Display label (internal)</span>
+              <input
+                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                value={inboxDisplay}
+                onChange={(e) => setInboxDisplay(e.target.value)}
+                placeholder="Client brand name"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-zinc-400 text-xs">
+                From (Resend) <span className="text-red-400/90">*</span>
+              </span>
+              <input
+                required
+                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm font-mono text-xs"
+                value={inboxFrom}
+                onChange={(e) => setInboxFrom(e.target.value)}
+                placeholder="Acme Sales &lt;sales@verified-client-domain.com&gt;"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-zinc-400 text-xs">Reply-To (optional)</span>
+              <input
+                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm font-mono text-xs"
+                value={inboxReplyTo}
+                onChange={(e) => setInboxReplyTo(e.target.value)}
+                placeholder="inbox@client.com"
+              />
+            </label>
+            {inboxErr ? <p className="text-xs text-red-400">{inboxErr}</p> : null}
+            {inboxOk ? <p className="text-xs text-emerald-400/90">{inboxOk}</p> : null}
+            <button
+              type="submit"
+              disabled={inboxSaving || !inboxFrom.trim()}
+              className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+            >
+              {inboxSaving ? "Saving…" : "Save sender"}
+            </button>
+          </form>
+        )}
       </section>
 
       <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3 text-sm">

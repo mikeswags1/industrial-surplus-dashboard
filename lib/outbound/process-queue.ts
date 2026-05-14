@@ -1,4 +1,5 @@
 import { sendWithResend } from "@/lib/email/resend-send";
+import { resolveOutboundIdentity } from "@/lib/repositories/inboxes.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
 import { getResendConfig } from "@/lib/env/server";
@@ -86,7 +87,18 @@ export async function processCampaignQueueOnce(limit = 5): Promise<{
       html = (camp.follow_up_2 as string) || html;
     }
 
-    const sent = await sendWithResend({ to: email, subject, html });
+    const orgId =
+      (typeof lead.organization_id === "string" ? lead.organization_id : null) ??
+      (typeof camp.organization_id === "string" ? camp.organization_id : null);
+    const identity = await resolveOutboundIdentity(admin, orgId);
+
+    const sent = await sendWithResend({
+      to: email,
+      subject,
+      html,
+      from: identity.from,
+      replyTo: identity.replyTo,
+    });
     if (!sent.ok) {
       await admin
         .from("campaign_send_queue")
@@ -96,13 +108,12 @@ export async function processCampaignQueueOnce(limit = 5): Promise<{
       continue;
     }
 
-    const cfg = getResendConfig()!;
     await admin.from("outreach_logs").insert({
       event_type: "send",
       provider: "resend",
       provider_message_id: sent.id,
       to_email: email,
-      from_email: cfg.from,
+      from_email: identity.from,
       subject,
       body_preview: html.replace(/<[^>]+>/g, " ").slice(0, 240),
       lead_id: job.lead_id,

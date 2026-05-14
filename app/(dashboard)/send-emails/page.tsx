@@ -176,7 +176,11 @@ export default function SendEmailsPage() {
           Resend webhook to your deployed{" "}
           <code className="text-zinc-400">/api/webhooks/resend</code> URL and set{" "}
           <code className="text-zinc-400">RESEND_WEBHOOK_SECRET</code>; inbound mail must match a lead’s
-          email address. Duplicate sends require confirmation here.
+          email address. Configure the visible <span className="text-zinc-400">From</span> in{" "}
+          <Link href="/settings#outbound-sender" className="text-[var(--color-accent)] hover:underline">
+            Settings → Outbound sender
+          </Link>{" "}
+          (domain verified in Resend). Duplicate sends require confirmation here.
         </p>
       </header>
 

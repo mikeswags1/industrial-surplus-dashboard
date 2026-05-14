@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getResendConfig } from "@/lib/env/server";
 import { sendWithResend } from "@/lib/email/resend-send";
+import { resolveOutboundIdentity } from "@/lib/repositories/inboxes.repository";
 import { countSendEventsForLead } from "@/lib/repositories/leads.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
@@ -60,11 +61,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: rl.message }, { status: 429 });
   }
 
+  let identity = { from: cfg.from, replyTo: null as string | null };
+  if (admin) {
+    let orgId: string | null = null;
+    if (body.leadId) {
+      const { data } = await admin
+        .from("leads")
+        .select("organization_id")
+        .eq("id", body.leadId)
+        .maybeSingle();
+      orgId = (data?.organization_id as string | undefined) ?? null;
+    }
+    identity = await resolveOutboundIdentity(admin, orgId);
+  }
+
   const sent = await sendWithResend({
     to,
     subject: body.subject,
     html: body.html,
     text: body.text,
+    from: identity.from,
+    replyTo: identity.replyTo,
   });
   if (!sent.ok) {
     return NextResponse.json({ error: sent.error }, { status: 502 });
@@ -76,7 +93,7 @@ export async function POST(request: Request) {
       provider: "resend",
       provider_message_id: sent.id,
       to_email: to,
-      from_email: cfg.from,
+      from_email: identity.from,
       subject: body.subject,
       body_preview: body.html.replace(/<[^>]+>/g, " ").slice(0, 240),
       lead_id: body.leadId ?? null,
