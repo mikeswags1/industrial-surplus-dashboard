@@ -67,6 +67,13 @@ export type Lead = {
   industry_detected?: string | null;
   keywords?: string[];
   organization_id?: string | null;
+  /** From Lead Finder when added via approval */
+  target_industry?: string | null;
+  likely_asset_types?: string[];
+  /** Enriched by GET /api/leads from `outreach_logs` */
+  last_email_sent_at?: string | null;
+  reply_logged_at?: string | null;
+  email_status_label?: string;
 };
 
 export type CampaignStatus = "draft" | "active" | "paused" | "completed";

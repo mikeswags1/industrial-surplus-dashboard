@@ -50,7 +50,7 @@ async function enrichAndScore(
       keywords,
     },
     {
-      industry: input.industry,
+      target_industry: input.target_industry,
       equipment_type: input.equipment_type,
       city: input.city,
       state: input.state,
@@ -63,6 +63,7 @@ async function enrichAndScore(
     enrichment_summary,
     enrichment_source_url,
     keywords,
+    target_industry: input.target_industry.trim(),
     ...scoring,
   };
 }

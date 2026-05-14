@@ -1,4 +1,5 @@
 import { getGooglePlacesConfig } from "@/lib/env/server";
+import { presetForTargetIndustryLabel } from "@/lib/lead-finder/target-industries";
 import type { LeadFinderSearchInput, ProviderCandidate } from "@/lib/lead-finder/types";
 
 const GOOGLE_PLACES_TEXT_SEARCH_URL =
@@ -80,7 +81,7 @@ function normalizePlace(
     industry:
       place.primaryTypeDisplayName?.text?.trim() ||
       place.types?.slice(0, 3).join(", ") ||
-      input.industry.trim(),
+      input.target_industry.trim(),
     source_url: place.googleMapsUri?.trim() ?? "",
     raw_provider: place as Record<string, unknown>,
   };

@@ -4,8 +4,9 @@ import {
   leadRowToLead,
   type LeadRow,
 } from "@/lib/db/mappers";
+import { attachOutreachToLead } from "@/lib/outreach/email-status";
 import { normalizeDedupeKey } from "@/lib/leads/csv";
-import type { Lead } from "@/lib/types";
+import type { Lead, LeadStatus } from "@/lib/types";
 
 const MAX_LIST = 2000;
 const DEFAULT_LIST = 500;
@@ -37,6 +38,28 @@ export async function queryExistingDedupeKeys(
   return seen;
 }
 
+type LogRow = { lead_id: string | null; event_type: string; created_at: string };
+
+function aggregateOutreachByLeadId(logs: LogRow[]) {
+  const map = new Map<string, { lastSend: string | null; lastReply: string | null }>();
+  for (const row of logs) {
+    const id = row.lead_id;
+    if (!id) continue;
+    let e = map.get(id);
+    if (!e) {
+      e = { lastSend: null, lastReply: null };
+      map.set(id, e);
+    }
+    if (row.event_type === "send") {
+      if (!e.lastSend || row.created_at > e.lastSend) e.lastSend = row.created_at;
+    }
+    if (row.event_type === "reply") {
+      if (!e.lastReply || row.created_at > e.lastReply) e.lastReply = row.created_at;
+    }
+  }
+  return map;
+}
+
 export async function fetchLeads(
   admin: SupabaseClient,
   limit: number,
@@ -49,7 +72,23 @@ export async function fetchLeads(
     .order("created_at", { ascending: false })
     .range(offset, end);
   if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => leadRowToLead(r as LeadRow));
+  const rows = (data ?? []) as LeadRow[];
+  const base = rows.map((r) => leadRowToLead(r));
+  const ids = base.map((l) => l.id);
+  if (ids.length === 0) return [];
+
+  const { data: logs, error: logErr } = await admin
+    .from("outreach_logs")
+    .select("lead_id, event_type, created_at")
+    .in("lead_id", ids)
+    .in("event_type", ["send", "reply"]);
+  if (logErr) throw new Error(logErr.message);
+
+  const agg = aggregateOutreachByLeadId((logs ?? []) as LogRow[]);
+  return base.map((lead) => {
+    const o = agg.get(lead.id) ?? { lastSend: null, lastReply: null };
+    return attachOutreachToLead(lead, o.lastSend, o.lastReply);
+  });
 }
 
 export async function insertLeadRow(
@@ -80,6 +119,8 @@ const LEAD_PATCH_MAP: [keyof Lead, string][] = [
   ["company_summary", "company_summary"],
   ["industry_detected", "industry_detected"],
   ["keywords", "keywords"],
+  ["target_industry", "target_industry"],
+  ["likely_asset_types", "likely_asset_types"],
 ];
 
 export function leadPatchToColumns(patch: Partial<Lead>): Record<string, unknown> {
@@ -106,4 +147,48 @@ export async function updateLeadRow(
   if (error) throw new Error(error.message);
   if (!data) return "not_found" as const;
   return leadRowToLead(data as LeadRow);
+}
+
+export async function updateLeadsStatusBulk(
+  admin: SupabaseClient,
+  ids: string[],
+  status: LeadStatus
+): Promise<number> {
+  if (!ids.length) return 0;
+  const { data, error } = await admin
+    .from("leads")
+    .update({ status })
+    .in("id", ids)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length;
+}
+
+export async function countSendEventsForLead(
+  admin: SupabaseClient,
+  leadId: string
+): Promise<number> {
+  const { count, error } = await admin
+    .from("outreach_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("lead_id", leadId)
+    .eq("event_type", "send");
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+export async function insertManualReplyLog(
+  admin: SupabaseClient,
+  leadId: string,
+  snippet?: string
+): Promise<void> {
+  const { error } = await admin.from("outreach_logs").insert({
+    event_type: "reply",
+    provider: "dashboard",
+    lead_id: leadId,
+    subject: "Marked as replied",
+    body_preview: (snippet ?? "Manual reply mark from dashboard").slice(0, 240),
+    meta: { source: "dashboard_manual" },
+  });
+  if (error) throw new Error(error.message);
 }

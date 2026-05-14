@@ -5,13 +5,9 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 const NAV = [
-  { href: "/", label: "Overview" },
-  { href: "/leads", label: "Leads" },
-  { href: "/lead-finder", label: "Lead Finder" },
-  { href: "/campaigns", label: "Campaigns" },
-  { href: "/email", label: "Email Generator" },
-  { href: "/ads", label: "Ad Scripts" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/lead-finder", label: "1 · Lead Finder" },
+  { href: "/leads", label: "2 · Leads" },
+  { href: "/send-emails", label: "3 · Send emails" },
   { href: "/settings", label: "Settings" },
 ] as const;
 
@@ -23,18 +19,25 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <aside className="w-full md:w-56 shrink-0 border-b md:border-b-0 md:border-r border-[var(--color-border)] bg-[var(--color-surface-1)]">
         <div className="p-4 md:p-5 border-b border-[var(--color-border)]">
           <div className="text-xs uppercase tracking-wider text-[var(--color-muted)]">
-            Surplus Ops
+            Select Surplus
           </div>
-          <div className="font-semibold text-zinc-100 mt-1">
-            Marketing Dashboard
+          <div className="font-semibold text-zinc-100 mt-1 leading-snug">
+            Outreach workspace
           </div>
+          <p className="mt-2 text-[11px] text-zinc-500 leading-snug">
+            Find surplus holders · save leads · cold email · track replies
+          </p>
+          <Link
+            href="/"
+            className="mt-2 inline-block text-xs text-[var(--color-accent)] hover:underline"
+          >
+            Workflow overview →
+          </Link>
         </div>
         <nav className="flex md:flex-col gap-1 p-2 overflow-x-auto md:overflow-visible">
           {NAV.map((item) => {
             const active =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.href}

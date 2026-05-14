@@ -20,6 +20,8 @@ type LeadsContextValue = {
   backendMessage: string | null;
   addLead: (input: Omit<Lead, "id" | "created_at" | "updated_at">) => Promise<void>;
   updateLead: (id: string, patch: Partial<Lead>) => Promise<void>;
+  bulkSetStatus: (ids: string[], status: LeadStatus) => Promise<void>;
+  bulkMarkReplied: (ids: string[]) => Promise<void>;
   refresh: () => Promise<void>;
   importFromCsvText: (
     csvText: string,
@@ -88,8 +90,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to create lead");
       }
-      const { lead } = (await res.json()) as { lead: Lead };
-      setLeads((prev) => [lead, ...prev]);
+      await refresh();
     },
     [dataSource]
   );
@@ -108,10 +109,49 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to update lead");
       }
-      const { lead } = (await res.json()) as { lead: Lead };
-      setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
+      await refresh();
     },
     [dataSource]
+  );
+
+  const bulkSetStatus = useCallback(
+    async (ids: string[], status: LeadStatus) => {
+      if (dataSource !== "remote") {
+        throw new Error("Cannot update leads until the database API is available.");
+      }
+      if (!ids.length) return;
+      const res = await fetch("/api/leads/bulk-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, status }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string }).error ?? "Bulk status failed");
+      }
+      await refresh();
+    },
+    [dataSource, refresh]
+  );
+
+  const bulkMarkReplied = useCallback(
+    async (ids: string[]) => {
+      if (dataSource !== "remote") {
+        throw new Error("Cannot update leads until the database API is available.");
+      }
+      if (!ids.length) return;
+      const res = await fetch("/api/leads/bulk-replied", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string }).error ?? "Bulk mark replied failed");
+      }
+      await refresh();
+    },
+    [dataSource, refresh]
   );
 
   const importFromCsvText = useCallback(
@@ -146,8 +186,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         const j = await res.json().catch(() => ({}));
         throw new Error((j as { error?: string }).error ?? "Enrich failed");
       }
-      const { lead } = (await res.json()) as { lead: Lead };
-      setLeads((prev) => prev.map((l) => (l.id === id ? lead : l)));
+      await refresh();
     },
     [dataSource]
   );
@@ -159,6 +198,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       backendMessage,
       addLead,
       updateLead,
+      bulkSetStatus,
+      bulkMarkReplied,
       refresh,
       importFromCsvText,
       enrichLead,
@@ -169,6 +210,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       backendMessage,
       addLead,
       updateLead,
+      bulkSetStatus,
+      bulkMarkReplied,
       refresh,
       importFromCsvText,
       enrichLead,

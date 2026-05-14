@@ -1,74 +1,66 @@
 "use client";
 
-import { StatCard } from "@/components/stat-card";
-import { useLeads, countByStatus, pipelineValue } from "@/context/leads-context";
-import { useCampaigns } from "@/context/campaigns-context";
+import Link from "next/link";
 
-function formatUsd(n: number) {
-  return n.toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
-}
-
-export default function OverviewPage() {
-  const { leads } = useLeads();
-  const { campaigns } = useCampaigns();
-
-  const total = leads.length;
-  const newLeads = countByStatus(leads, "New");
-  const contacted = countByStatus(leads, "Contacted");
-  const interested = countByStatus(leads, "Interested");
-  const won = countByStatus(leads, "Deal Won");
-  const pipeline = pipelineValue(leads);
-
-  const emailsSent = campaigns.reduce((s, c) => s + c.emails_sent, 0);
-  const replies = campaigns.reduce((s, c) => s + c.replies_count, 0);
-  const replyRate =
-    emailsSent > 0 ? Math.round((replies / emailsSent) * 1000) / 10 : 0;
-
+export default function HomePage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-xl">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
-        <p className="mt-1 text-sm text-zinc-500 max-w-2xl">
-          Snapshot of the lead pipeline and outbound activity. Data comes from
-          Supabase when configured, otherwise the in-browser store.
+        <h1 className="text-2xl font-semibold tracking-tight">How this dashboard works</h1>
+        <p className="mt-2 text-sm text-zinc-500">
+          Four simple steps — no fluff. Everything else is tucked under Settings until you need
+          it.
         </p>
       </header>
-
-      <section>
-        <h2 className="text-sm font-medium text-zinc-400 mb-3">Leads</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total leads" value={String(total)} />
-          <StatCard title="New" value={String(newLeads)} />
-          <StatCard title="Contacted" value={String(contacted)} />
-          <StatCard title="Interested" value={String(interested)} />
-          <StatCard title="Deals won" value={String(won)} />
-          <StatCard
-            title="Est. pipeline value"
-            value={formatUsd(pipeline)}
-            hint="Open pipeline statuses only"
-          />
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-sm font-medium text-zinc-400 mb-3">Outreach</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard title="Emails sent (campaigns)" value={String(emailsSent)} />
-          <StatCard
-            title="Reply rate"
-            value={emailsSent ? `${replyRate}%` : "—"}
-            hint={emailsSent ? "Across saved campaigns" : "No sends logged yet"}
-          />
-          <StatCard
-            title="Active campaigns"
-            value={String(campaigns.filter((c) => c.status === "active").length)}
-          />
-        </div>
-      </section>
+      <ol className="space-y-6 text-sm">
+        <li className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5">
+          <div className="font-medium text-zinc-200 mb-1">1. Find companies</div>
+          <p className="text-zinc-500 mb-3">
+            Use Lead Finder with state, city, target industry preset, and equipment focus. Results
+            are real Google Places listings — nothing fake gets saved.
+          </p>
+          <Link
+            href="/lead-finder"
+            className="text-[var(--color-accent)] text-sm hover:underline"
+          >
+            Open Lead Finder →
+          </Link>
+        </li>
+        <li className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5">
+          <div className="font-medium text-zinc-200 mb-1">2. Save as leads</div>
+          <p className="text-zinc-500 mb-3">
+            Approve the best hits one-by-one or use{" "}
+            <span className="text-zinc-400">Add all</span> to save everyone still in preview.
+            Duplicates are skipped automatically when the CRM already has the same website or firm.
+          </p>
+          <Link href="/leads" className="text-[var(--color-accent)] text-sm hover:underline">
+            View saved leads →
+          </Link>
+        </li>
+        <li className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5">
+          <div className="font-medium text-zinc-200 mb-1">3. Send cold emails</div>
+          <p className="text-zinc-500 mb-3">
+            Pick leads with verified emails, generate a starter message, edit it, and send tracked
+            batches. Resending needs an explicit confirmation.
+          </p>
+          <Link
+            href="/send-emails"
+            className="text-[var(--color-accent)] text-sm hover:underline"
+          >
+            Send emails →
+          </Link>
+        </li>
+        <li className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5">
+          <div className="font-medium text-zinc-200 mb-1">4. Track replies</div>
+          <p className="text-zinc-500 mb-3">
+            The Leads table shows email activity from your send logs: sent, waiting, no-response
+            days, replies, pipeline status, and deals won. Bulk actions help you tidy the list fast.
+          </p>
+          <Link href="/leads" className="text-[var(--color-accent)] text-sm hover:underline">
+            Back to Leads →
+          </Link>
+        </li>
+      </ol>
     </div>
   );
 }

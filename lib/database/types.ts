@@ -40,6 +40,8 @@ export type LeadRow = {
   industry_detected: string | null;
   keywords: string[] | null;
   enrichment_at: string | null;
+  target_industry?: string | null;
+  likely_asset_types?: string[] | null;
 };
 
 export type LeadFinderRunRow = {
@@ -81,6 +83,11 @@ export type LeadFinderCandidateRow = {
   score: number | null;
   score_source: "ai" | "heuristic" | "unscored";
   score_explanation: string | null;
+  target_industry: string | null;
+  asset_likelihood_score: number | null;
+  likely_asset_types: string[] | null;
+  outreach_angle: string | null;
+  reason_selected: string | null;
   status: "preview" | "approved" | "rejected" | "duplicate" | "error";
   lead_id: string | null;
   created_at: string;

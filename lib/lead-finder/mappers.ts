@@ -15,5 +15,6 @@ export function leadFinderCandidateRowToCandidate(
     ...row,
     raw_provider: row.raw_provider ?? {},
     keywords: row.keywords ?? [],
+    likely_asset_types: row.likely_asset_types ?? [],
   };
 }

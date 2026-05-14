@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getResendConfig } from "@/lib/env/server";
 import { sendWithResend } from "@/lib/email/resend-send";
+import { countSendEventsForLead } from "@/lib/repositories/leads.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
 
@@ -11,6 +12,8 @@ type Body = {
   text?: string;
   leadId?: string;
   campaignId?: string;
+  /** Set true to send again when a send log already exists for this lead */
+  allowResend?: boolean;
 };
 
 export async function POST(request: Request) {
@@ -37,6 +40,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "subject and html required" }, { status: 400 });
   }
 
+  const admin = getSupabaseAdmin();
+  if (body.leadId && !body.allowResend && admin) {
+    const prior = await countSendEventsForLead(admin, body.leadId);
+    if (prior > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "This lead already has a sent email logged. Pass allowResend: true from the Send Emails page to send again.",
+          code: "DUPLICATE_SEND",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const rl = await assertSendRateLimitOk();
   if (!rl.ok) {
     return NextResponse.json({ error: rl.message }, { status: 429 });
@@ -52,7 +70,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: sent.error }, { status: 502 });
   }
 
-  const admin = getSupabaseAdmin();
   if (admin) {
     await admin.from("outreach_logs").insert({
       event_type: "send",

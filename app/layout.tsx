@@ -5,9 +5,9 @@ import { LeadsProvider } from "@/context/leads-context";
 import { CampaignsProvider } from "@/context/campaigns-context";
 
 export const metadata: Metadata = {
-  title: "Industrial Surplus — Marketing Dashboard",
+  title: "Select Surplus — Lead Finder & Outreach",
   description:
-    "Internal dashboard for lead discovery, outreach campaigns, and creative generation.",
+    "Find surplus holders, save leads, send cold emails, and track replies in one workspace.",
 };
 
 export default function RootLayout({

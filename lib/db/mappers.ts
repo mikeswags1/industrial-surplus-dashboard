@@ -33,6 +33,8 @@ export function leadRowToLead(row: LeadRow): Lead {
     industry_detected: row.industry_detected ?? null,
     keywords: row.keywords ?? [],
     organization_id: row.organization_id ?? undefined,
+    target_industry: row.target_industry ?? null,
+    likely_asset_types: row.likely_asset_types ?? [],
   };
 }
 
@@ -57,5 +59,7 @@ export function leadInputToInsert(
     company_summary: input.company_summary ?? null,
     industry_detected: input.industry_detected ?? null,
     keywords: input.keywords?.length ? input.keywords : [],
+    target_industry: input.target_industry ?? null,
+    likely_asset_types: input.likely_asset_types?.length ? input.likely_asset_types : [],
   };
 }

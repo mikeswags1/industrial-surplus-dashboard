@@ -26,7 +26,7 @@ export async function createLeadFinderRun(
       status: "running",
       state: input.state,
       city: input.city,
-      industry: input.industry,
+      industry: input.target_industry,
       equipment_type: input.equipment_type,
       requested_count: input.count,
     })
@@ -79,6 +79,11 @@ export async function insertLeadFinderCandidates(
     enrichment_summary: c.enrichment_summary,
     enrichment_source_url: c.enrichment_source_url,
     keywords: c.keywords,
+    target_industry: c.target_industry,
+    asset_likelihood_score: c.asset_likelihood_score,
+    likely_asset_types: c.likely_asset_types,
+    outreach_angle: c.outreach_angle,
+    reason_selected: c.reason_selected,
     score: c.score,
     score_source: c.score_source,
     score_explanation: c.score_explanation,
@@ -89,6 +94,7 @@ export async function insertLeadFinderCandidates(
     .from("lead_finder_candidates")
     .insert(rows)
     .select("*")
+    .order("asset_likelihood_score", { ascending: false, nullsFirst: false })
     .order("score", { ascending: false, nullsFirst: false });
   if (error) throw new Error(error.message);
   return ((data ?? []) as LeadFinderCandidateRow[]).map(
@@ -112,6 +118,7 @@ export async function fetchLeadFinderRunWithCandidates(
     .from("lead_finder_candidates")
     .select("*")
     .eq("run_id", id)
+    .order("asset_likelihood_score", { ascending: false, nullsFirst: false })
     .order("score", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: true });
   if (candErr) throw new Error(candErr.message);
@@ -186,13 +193,34 @@ export async function approveLeadFinderCandidate(
     };
   }
 
+  const likelihood = c.asset_likelihood_score ?? c.score;
+  const rationale = (c.reason_selected ?? c.score_explanation)?.trim() ?? "";
+  const likely =
+    Array.isArray(c.likely_asset_types) && c.likely_asset_types.length
+      ? c.likely_asset_types.join(", ")
+      : null;
+
   const notes = [
-    c.score_explanation ? `Lead Finder score: ${c.score ?? "unscored"} (${c.score_source}). ${c.score_explanation}` : null,
+    c.target_industry
+      ? `Lead Finder (buy-side) preset category: ${c.target_industry}`
+      : null,
+    likelihood != null
+      ? `Asset likelihood score: ${likelihood}/100 (${c.score_source})${rationale ? `. ${rationale}` : ""}`
+      : rationale
+        ? `Lead Finder: ${rationale}`
+        : null,
+    likely ? `Likely asset types: ${likely}` : null,
+    c.outreach_angle?.trim()
+      ? `Suggested outreach angle: ${c.outreach_angle.trim()}`
+      : null,
     c.source_url ? `Source: ${c.source_url}` : null,
     c.enrichment_summary ? `Website summary: ${c.enrichment_summary}` : null,
   ]
     .filter(Boolean)
     .join("\n\n");
+
+  const tags = ["lead-finder", "surplus-holder", "google-places", `run:${c.run_id}`];
+  if (c.target_industry) tags.push(`target:${c.target_industry.slice(0, 40)}`);
 
   const { data: leadRow, error: leadErr } = await admin
     .from("leads")
@@ -205,15 +233,16 @@ export async function approveLeadFinderCandidate(
       industry: c.industry || null,
       state: c.state || null,
       city: c.city || null,
-      lead_source: "Google Places",
+      lead_source: "Lead Finder — surplus holders",
       equipment_type: (run?.equipment_type as string | undefined) ?? null,
       estimated_value: null,
       status: "New",
       notes: notes || null,
-      tags: ["lead-finder", "google-places", `run:${c.run_id}`],
+      tags,
       company_summary: c.enrichment_summary,
       industry_detected: c.industry,
-      keywords: c.keywords ?? [],
+      target_industry: c.target_industry ?? null,
+      likely_asset_types: Array.isArray(c.likely_asset_types) ? c.likely_asset_types : [],
     })
     .select("*")
     .single();
@@ -243,4 +272,37 @@ export async function approveLeadFinderCandidate(
     candidate: leadFinderCandidateRowToCandidate(updated as LeadFinderCandidateRow),
     duplicate: false,
   };
+}
+
+export async function approveAllPreviewCandidates(
+  admin: SupabaseClient,
+  runId: string
+): Promise<{
+  approved: number;
+  duplicate: number;
+  errors: number;
+}> {
+  const { data: rows, error } = await admin
+    .from("lead_finder_candidates")
+    .select("id")
+    .eq("run_id", runId)
+    .eq("status", "preview");
+  if (error) throw new Error(error.message);
+
+  let approved = 0;
+  let duplicate = 0;
+  let errors = 0;
+
+  for (const row of rows ?? []) {
+    const candidateId = row.id as string;
+    try {
+      const result = await approveLeadFinderCandidate(admin, candidateId);
+      if (result.duplicate) duplicate++;
+      else approved++;
+    } catch {
+      errors++;
+    }
+  }
+
+  return { approved, duplicate, errors };
 }

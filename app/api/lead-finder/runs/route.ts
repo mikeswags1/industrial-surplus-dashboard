@@ -6,6 +6,7 @@ import {
 import { leadFinderSetup, runLeadFinder } from "@/lib/lead-finder/engine";
 import type { LeadFinderSearchInput } from "@/lib/lead-finder/types";
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
+import { LEAD_FINDER_TARGET_INDUSTRY_LABELS, LEAD_FINDER_TARGET_INDUSTRY_LEGACY_ALIASES } from "@/lib/lead-finder/target-industries";
 import { EQUIPMENT_TYPES, US_STATES } from "@/lib/types";
 
 function bad(message: string) {
@@ -13,16 +14,24 @@ function bad(message: string) {
 }
 
 function parseInput(body: unknown): LeadFinderSearchInput | NextResponse {
-  const b = body as Partial<LeadFinderSearchInput>;
+  const b = body as Partial<LeadFinderSearchInput> & { industry?: string };
   const state = b.state?.trim().toUpperCase() ?? "";
   const city = b.city?.trim() ?? "";
-  const industry = b.industry?.trim() ?? "";
+  const rawTarget =
+    (typeof b.target_industry === "string" ? b.target_industry.trim() : "") ||
+    (typeof b.industry === "string" ? b.industry.trim() : "");
+  const target_industry = rawTarget
+    ? LEAD_FINDER_TARGET_INDUSTRY_LEGACY_ALIASES[rawTarget] ?? rawTarget
+    : "";
   const equipment_type = b.equipment_type?.trim() ?? "";
   const count = Number(b.count);
 
   if (!(US_STATES as readonly string[]).includes(state)) return bad("valid state required");
   if (!city) return bad("city required");
-  if (!industry) return bad("industry required");
+  if (!target_industry) return bad("target_industry required (pick a preset category)");
+  if (!LEAD_FINDER_TARGET_INDUSTRY_LABELS.has(target_industry)) {
+    return bad("target_industry must be one of the Lead Finder preset categories");
+  }
   if (!(EQUIPMENT_TYPES as readonly string[]).includes(equipment_type)) {
     return bad("valid equipment_type required");
   }
@@ -30,7 +39,7 @@ function parseInput(body: unknown): LeadFinderSearchInput | NextResponse {
     return bad("count must be an integer from 1 to 20");
   }
 
-  return { state, city, industry, equipment_type, count };
+  return { state, city, target_industry, equipment_type, count };
 }
 
 export async function POST(request: Request) {

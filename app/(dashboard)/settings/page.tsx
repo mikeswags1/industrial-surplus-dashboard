@@ -60,7 +60,9 @@ export default function SettingsPage() {
           <code className="text-zinc-400">supabase/schema.sql</code>, then{" "}
           <code className="text-zinc-400">supabase/migrations/002_outbound_platform.sql</code>, then{" "}
           <code className="text-zinc-400">supabase/migrations/003_production_core.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/004_lead_finder.sql</code> in the Supabase SQL editor.
+          <code className="text-zinc-400">supabase/migrations/004_lead_finder.sql</code>, then{" "}
+          <code className="text-zinc-400">supabase/migrations/005_lead_finder_buy_side.sql</code>, then{" "}
+          <code className="text-zinc-400">supabase/migrations/006_leads_target_assets.sql</code> in the Supabase SQL editor.
         </p>
       </section>
 

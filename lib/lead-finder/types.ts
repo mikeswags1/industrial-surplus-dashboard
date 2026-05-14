@@ -15,7 +15,8 @@ export type LeadFinderCandidateStatus =
 export type LeadFinderSearchInput = {
   state: string;
   city: string;
-  industry: string;
+  /** One of LEAD_FINDER_TARGET_INDUSTRIES labels — companies likely to hold surplus assets. */
+  target_industry: string;
   equipment_type: string;
   count: number;
 };
@@ -39,8 +40,19 @@ export type ScoredCandidate = ProviderCandidate & {
   enrichment_summary: string | null;
   enrichment_source_url: string | null;
   keywords: string[];
+  /** Preset category used for this search (Select Surplus buy-side targeting). */
+  target_industry: string;
+  /** 0–100: likelihood the business may own excess / scrap / removable industrial assets. */
+  asset_likelihood_score: number | null;
+  likely_asset_types: string[];
+  /** Suggested cold-email angle (buy, remove, recycle). */
+  outreach_angle: string | null;
+  /** Evidence-based “why this lead” — must not invent facts. */
+  reason_selected: string | null;
+  /** Legacy sort column; mirrors asset_likelihood_score when set. */
   score: number | null;
   score_source: LeadFinderScoreSource;
+  /** Legacy field; mirrors reason_selected when set. */
   score_explanation: string | null;
 };
 
