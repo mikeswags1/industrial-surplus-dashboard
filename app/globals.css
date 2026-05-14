@@ -97,6 +97,7 @@ body {
   @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)];
 }
 
+.overflow-x-auto::-webkit-scrollbar {
   height: 6px;
 }
 .overflow-x-auto::-webkit-scrollbar-thumb {
