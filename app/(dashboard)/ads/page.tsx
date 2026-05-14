@@ -58,7 +58,7 @@ export default function AdScriptsPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-4">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-400">Angle / hook</span>
             <select
@@ -116,7 +116,7 @@ export default function AdScriptsPage() {
             type="button"
             disabled={loading}
             onClick={generate}
-            className="w-full rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+            className="dash-btn-primary disabled:opacity-50 w-full"
           >
             {loading ? "Generating…" : "Generate ad copy"}
           </button>
@@ -126,7 +126,7 @@ export default function AdScriptsPage() {
             </p>
           ) : null}
         </div>
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 min-h-[280px]">
+        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 min-h-[280px]">
           <h2 className="text-sm font-medium text-zinc-300 mb-3">Output</h2>
           {!result ? (
             <p className="text-sm text-zinc-500">

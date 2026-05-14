@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3">
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-3">
           <h2 className="text-sm font-medium text-zinc-300">Leads by state</h2>
           {byState.length === 0 ? (
             <p className="text-sm text-zinc-500">No leads yet.</p>
@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
             </div>
           )}
         </section>
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3">
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-3">
           <h2 className="text-sm font-medium text-zinc-300">Top industries</h2>
           <p className="text-xs text-zinc-600">
             Uses enriched <code className="text-zinc-500">industry_detected</code> when

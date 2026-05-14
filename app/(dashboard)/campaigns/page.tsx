@@ -102,7 +102,7 @@ export default function CampaignsPage() {
 
       <form
         onSubmit={onCreate}
-        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4 max-w-2xl"
+        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-4 max-w-2xl"
       >
         <h2 className="text-sm font-medium text-zinc-300">New campaign</h2>
         <label className="flex flex-col gap-1 text-sm">
@@ -176,7 +176,7 @@ export default function CampaignsPage() {
         </div>
         <button
           type="submit"
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)]"
+          className="dash-btn-primary"
         >
           Save campaign (with generated scripts)
         </button>
@@ -188,7 +188,7 @@ export default function CampaignsPage() {
           {campaigns.map((c) => (
             <article
               key={c.id}
-              className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 flex flex-col gap-3"
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-4 flex flex-col gap-3"
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>

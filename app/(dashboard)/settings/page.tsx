@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { DashCard } from "@/components/dash-card";
+import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
 import { useCampaigns } from "@/context/campaigns-context";
 
@@ -74,17 +74,17 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Environment checklist and backend connectivity for the outbound platform.
-        </p>
-      </header>
+    <div className="space-y-10 max-w-2xl">
+      <PageHeader
+        title="Settings"
+        description="Environment checklist, outbound sender identity, and backend connectivity for this workspace."
+      />
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4 text-sm">
-        <h2 className="text-sm font-medium text-zinc-300">Environment variables</h2>
-        <ul className="space-y-2 text-zinc-400">
+      <DashCard className="p-6 space-y-4 text-sm">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+          Environment variables
+        </h2>
+        <ul className="space-y-2 text-[var(--color-body-muted)]">
           <li>
             <code className="text-zinc-300">NEXT_PUBLIC_SUPABASE_URL</code> — project URL
           </li>
@@ -117,71 +117,66 @@ export default function SettingsPage() {
             <code className="text-zinc-300">OUTBOUND_MAX_SENDS_PER_HOUR</code> — optional cap (default 100)
           </li>
         </ul>
-        <p className="text-zinc-500 text-xs pt-2">
-          Copy <code className="text-zinc-400">.env.example</code> to{" "}
-          <code className="text-zinc-400">.env.local</code> and fill values. Run{" "}
-          <code className="text-zinc-400">supabase/schema.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/002_outbound_platform.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/003_production_core.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/004_lead_finder.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/005_lead_finder_buy_side.sql</code>, then{" "}
-          <code className="text-zinc-400">supabase/migrations/006_leads_target_assets.sql</code> in the Supabase SQL editor.
+        <p className="text-[var(--color-body-muted)] text-xs pt-2 leading-relaxed">
+          Copy <code className="text-[var(--color-body)]">.env.example</code> to{" "}
+          <code className="text-[var(--color-body)]">.env.local</code> and fill values. Run migrations in
+          order in the Supabase SQL editor (see repo <code className="text-[var(--color-body)]">supabase/migrations</code>
+          ).
         </p>
-      </section>
+      </DashCard>
 
-      <section
-        id="outbound-sender"
-        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4 text-sm"
-      >
+      <DashCard id="outbound-sender" className="p-6 space-y-4 text-sm">
         <div>
-          <h2 className="text-sm font-medium text-zinc-300">Outbound sender (client email)</h2>
-          <p className="mt-1 text-xs text-zinc-500">
-            Stored in Supabase <code className="text-zinc-400">inboxes</code>. Must match an address
-            or domain you have verified in{" "}
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+            Outbound sender
+          </h2>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)] leading-relaxed">
+            Stored in Supabase <code className="text-[var(--color-body)]">inboxes</code>. Must match a
+            verified domain in{" "}
             <a
-              className="text-[var(--color-accent)] hover:underline"
+              className="dash-link"
               href="https://resend.com/domains"
               target="_blank"
               rel="noreferrer"
             >
               Resend
             </a>
-            . Leads use their workspace <code className="text-zinc-500">organization_id</code> to pick
-            the right identity; this form edits the default workspace.
+            . Uses each lead’s <code className="text-[var(--color-body)]">organization_id</code>; this
+            form sets the default workspace.
           </p>
         </div>
 
         {leadsMode !== "remote" ? (
-          <p className="text-xs text-zinc-600">Connect Supabase to edit the sending identity.</p>
+          <p className="text-xs text-[var(--color-muted)]">Connect Supabase to edit the sending identity.</p>
         ) : inboxLoading ? (
-          <p className="text-zinc-500 text-xs">Loading…</p>
+          <p className="text-[var(--color-body-muted)] text-xs">Loading…</p>
         ) : (
-          <form onSubmit={saveInbox} className="space-y-3 max-w-lg">
-            <label className="flex flex-col gap-1">
-              <span className="text-zinc-400 text-xs">Display label (internal)</span>
+          <form onSubmit={saveInbox} className="space-y-4 max-w-lg">
+            <label className="flex flex-col gap-2">
+              <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">Display label (internal)</span>
               <input
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+                className="dash-input font-sans"
                 value={inboxDisplay}
                 onChange={(e) => setInboxDisplay(e.target.value)}
                 placeholder="Client brand name"
               />
             </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-zinc-400 text-xs">
+            <label className="flex flex-col gap-2">
+              <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">
                 From (Resend) <span className="text-red-400/90">*</span>
               </span>
               <input
                 required
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm font-mono text-xs"
+                className="dash-input font-mono text-[13px]"
                 value={inboxFrom}
                 onChange={(e) => setInboxFrom(e.target.value)}
                 placeholder="Acme Sales &lt;sales@verified-client-domain.com&gt;"
               />
             </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-zinc-400 text-xs">Reply-To (optional)</span>
+            <label className="flex flex-col gap-2">
+              <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">Reply-To (optional)</span>
               <input
-                className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm font-mono text-xs"
+                className="dash-input font-mono text-[13px]"
                 value={inboxReplyTo}
                 onChange={(e) => setInboxReplyTo(e.target.value)}
                 placeholder="inbox@client.com"
@@ -192,49 +187,49 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={inboxSaving || !inboxFrom.trim()}
-              className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+              className="dash-btn-primary disabled:opacity-50"
             >
               {inboxSaving ? "Saving…" : "Save sender"}
             </button>
           </form>
         )}
-      </section>
+      </DashCard>
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3 text-sm">
-        <h2 className="text-sm font-medium text-zinc-300">Backend status</h2>
-        <p className="text-zinc-500">
-          Leads API: <span className="text-zinc-300">{modeLabel(leadsMode)}</span>
+      <DashCard className="p-6 space-y-4 text-sm">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Backend status</h2>
+        <p className="text-[var(--color-body-muted)]">
+          Leads API: <span className="text-[var(--color-heading)]">{modeLabel(leadsMode)}</span>
           {leadsErr && leadsMode !== "remote" ? (
-            <span className="block mt-1 text-xs text-zinc-600">{leadsErr}</span>
+            <span className="block mt-1 text-xs text-[var(--color-muted)]">{leadsErr}</span>
           ) : null}
         </p>
-        <p className="text-zinc-500">
-          Campaigns API: <span className="text-zinc-300">{modeLabel(campMode)}</span>
+        <p className="text-[var(--color-body-muted)]">
+          Campaigns API: <span className="text-[var(--color-heading)]">{modeLabel(campMode)}</span>
           {campErr && campMode !== "remote" ? (
-            <span className="block mt-1 text-xs text-zinc-600">{campErr}</span>
+            <span className="block mt-1 text-xs text-[var(--color-muted)]">{campErr}</span>
           ) : null}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => void refreshLeads()}
-            className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-zinc-200 hover:bg-[var(--color-surface-2)]"
+            className="dash-btn-secondary"
           >
             Refresh leads
           </button>
           <button
             type="button"
             onClick={() => void refreshCamp()}
-            className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm text-zinc-200 hover:bg-[var(--color-surface-2)]"
+            className="dash-btn-secondary"
           >
             Refresh campaigns
           </button>
         </div>
-        <p className="text-xs text-zinc-600">
-          Production mode does not persist leads or campaigns in the browser. All data lives in
-          Supabase once the service role and migrations are in place.
+        <p className="text-xs text-[var(--color-muted)] leading-relaxed">
+          Production mode does not persist leads or campaigns in the browser. All data lives in Supabase
+          once the service role and migrations are in place.
         </p>
-      </section>
+      </DashCard>
     </div>
   );
 }

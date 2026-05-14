@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { DashCard } from "@/components/dash-card";
+import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
 
 type OutreachLog = {
@@ -162,34 +164,34 @@ export default function SendEmailsPage() {
   });
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Send emails</h1>
-        <p className="mt-1 text-sm text-zinc-500 max-w-2xl">
-          Choose saved leads from the{" "}
-          <Link href="/leads" className="text-[var(--color-accent)] hover:underline">
-            Leads
-          </Link>{" "}
-          list (with valid emails), polish the draft, then send in small batches. Outbound sends and
-          manual “replied” marks are logged in{" "}
-          <code className="text-zinc-400">outreach_logs</code>. For automatic reply detection, add a
-          Resend webhook to your deployed{" "}
-          <code className="text-zinc-400">/api/webhooks/resend</code> URL and set{" "}
-          <code className="text-zinc-400">RESEND_WEBHOOK_SECRET</code>; inbound mail must match a lead’s
-          email address. Configure the visible <span className="text-zinc-400">From</span> in{" "}
-          <Link href="/settings#outbound-sender" className="text-[var(--color-accent)] hover:underline">
-            Settings → Outbound sender
-          </Link>{" "}
-          (domain verified in Resend). Duplicate sends require confirmation here.
-        </p>
-      </header>
+    <div className="space-y-10 max-w-6xl">
+      <PageHeader
+        title="Send emails"
+        description={(
+          <>
+            Choose saved leads from the{" "}
+            <Link href="/leads" className="dash-link">
+              Leads
+            </Link>{" "}
+            list (valid emails only), edit the draft, then send in batches. Sends and manual reply marks
+            go to <code className="text-[var(--color-body)]">outreach_logs</code>. Add a Resend webhook at{" "}
+            <code className="text-[var(--color-body)]">/api/webhooks/resend</code> with{" "}
+            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> for inbound detection.
+            Set the visible From in{" "}
+            <Link href="/settings#outbound-sender" className="dash-link">
+              Settings → Outbound sender
+            </Link>
+            . Duplicate sends require confirmation.
+          </>
+        )}
+      />
 
       {dataSource !== "remote" ? (
-        <p className="text-sm text-amber-400">Connect Supabase to send tracked emails.</p>
+        <p className="text-sm text-amber-400/95">Connect Supabase to send tracked emails.</p>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-3">
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-medium text-zinc-300">
               Select leads ({withEmail.length} with email)
@@ -231,7 +233,7 @@ export default function SendEmailsPage() {
           ) : null}
         </section>
 
-        <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4">
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-4">
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -266,7 +268,7 @@ export default function SendEmailsPage() {
               type="button"
               disabled={sending || selected.size === 0}
               onClick={() => void sendBatch(false)}
-              className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+              className="dash-btn-primary disabled:opacity-50"
             >
               {sending ? "Sending…" : `Send (${selected.size})`}
             </button>
@@ -302,7 +304,7 @@ export default function SendEmailsPage() {
         </section>
       </div>
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5">
+      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
           <h2 className="text-sm font-medium text-zinc-300">Recent email activity</h2>
           <button

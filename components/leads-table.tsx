@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { DashCard } from "@/components/dash-card";
 import type { LeadStatus } from "@/lib/types";
 import { LEAD_STATUSES, EQUIPMENT_TYPES, US_STATES } from "@/lib/types";
 import { useLeads } from "@/context/leads-context";
@@ -98,21 +99,22 @@ export function LeadsTable() {
   const selectedIds = Array.from(selected);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end">
-        <label className="flex flex-col gap-1 text-sm min-w-[200px] flex-1">
-          <span className="text-zinc-400">Search</span>
+    <div className="space-y-5">
+      <DashCard className="p-4 sm:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+        <label className="flex flex-col gap-2 min-w-[200px] flex-1">
+          <span className="dash-label">Search</span>
           <input
             placeholder="Company, email, phone, industry, notes…"
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+            className="dash-input"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm w-full sm:w-44">
-          <span className="text-zinc-400">Email status</span>
+        <label className="flex flex-col gap-2 w-full sm:w-44">
+          <span className="dash-label">Email status</span>
           <select
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+            className="dash-input"
             value={emailFilter}
             onChange={(e) =>
               setEmailFilter(e.target.value as (typeof EMAIL_STATUS_FILTERS)[number])
@@ -125,10 +127,10 @@ export function LeadsTable() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm w-full sm:w-40">
-          <span className="text-zinc-400">Pipeline status</span>
+        <label className="flex flex-col gap-2 w-full sm:w-40">
+          <span className="dash-label">Pipeline status</span>
           <select
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+            className="dash-input"
             value={pipelineStatus}
             onChange={(e) =>
               setPipelineStatus(e.target.value as LeadStatus | "All")
@@ -142,10 +144,10 @@ export function LeadsTable() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm w-full sm:w-32">
-          <span className="text-zinc-400">State</span>
+        <label className="flex flex-col gap-2 w-full sm:w-32">
+          <span className="dash-label">State</span>
           <select
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+            className="dash-input"
             value={stateFilter}
             onChange={(e) => setStateFilter(e.target.value)}
           >
@@ -157,10 +159,10 @@ export function LeadsTable() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm w-full sm:w-48">
-          <span className="text-zinc-400">Equipment</span>
+        <label className="flex flex-col gap-2 w-full sm:w-48">
+          <span className="dash-label">Equipment</span>
           <select
-            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm"
+            className="dash-input"
             value={equipment}
             onChange={(e) => setEquipment(e.target.value)}
           >
@@ -173,30 +175,31 @@ export function LeadsTable() {
           </select>
         </label>
       </div>
+      </DashCard>
 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <button
           type="button"
           onClick={selectAllFiltered}
-          className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-zinc-200 hover:bg-[var(--color-surface-2)]"
+          className="dash-btn-secondary px-3 py-1.5 text-xs"
         >
           Select all ({filtered.length})
         </button>
         <button
           type="button"
           onClick={clearSelection}
-          className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-zinc-400 hover:bg-[var(--color-surface-2)]"
+          className="dash-btn-secondary px-3 py-1.5 text-xs opacity-80"
         >
           Clear selection
         </button>
         {selectedIds.length > 0 ? (
           <>
-            <span className="text-zinc-500 text-xs">
+            <span className="text-[var(--color-body-muted)] text-xs px-1">
               {selectedIds.length} selected
             </span>
             <button
               type="button"
-              className="rounded-md bg-emerald-900/40 border border-emerald-800/50 px-3 py-1.5 text-emerald-200 text-xs"
+              className="rounded-lg border border-emerald-800/45 bg-emerald-950/35 px-3 py-1.5 text-emerald-200 text-xs font-medium hover:bg-emerald-950/50 transition-colors"
               onClick={() =>
                 void bulkMarkReplied(selectedIds).then(clearSelection).catch((e) =>
                   alert(e instanceof Error ? e.message : "Failed")
@@ -207,7 +210,7 @@ export function LeadsTable() {
             </button>
             <button
               type="button"
-              className="rounded-md bg-amber-900/30 border border-amber-800/40 px-3 py-1.5 text-amber-100 text-xs"
+              className="rounded-lg border border-amber-800/40 bg-amber-950/30 px-3 py-1.5 text-amber-100 text-xs font-medium hover:bg-amber-950/45 transition-colors"
               onClick={() =>
                 void bulkSetStatus(selectedIds, "Interested")
                   .then(clearSelection)
@@ -218,7 +221,7 @@ export function LeadsTable() {
             </button>
             <button
               type="button"
-              className="rounded-md bg-zinc-800 border border-[var(--color-border)] px-3 py-1.5 text-zinc-300 text-xs"
+              className="dash-btn-secondary px-3 py-1.5 text-xs"
               onClick={() =>
                 void bulkSetStatus(selectedIds, "Not Interested")
                   .then(clearSelection)
@@ -231,9 +234,9 @@ export function LeadsTable() {
         ) : null}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
+      <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)]">
         <table className="min-w-[1200px] w-full text-left text-sm">
-          <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-muted)]">
+          <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40 text-[11px] uppercase tracking-[0.08em] text-[var(--color-muted)]">
             <tr>
               <th className="px-2 py-3 w-10 font-medium">
                 <span className="sr-only">Select</span>
@@ -262,10 +265,10 @@ export function LeadsTable() {
                   />
                 </td>
                 <td className="px-3 py-3">
-                  <div className="font-medium text-zinc-100">{l.company_name}</div>
+                  <div className="font-medium text-[var(--color-heading)]">{l.company_name}</div>
                   {l.website?.trim() ? (
                     <a
-                      className="text-xs text-[var(--color-accent)] hover:underline break-all block max-w-[200px]"
+                      className="text-xs text-[var(--color-accent-hover)] hover:underline break-all block max-w-[200px]"
                       href={
                         l.website.startsWith("http") ? l.website : `https://${l.website}`
                       }
@@ -320,7 +323,7 @@ export function LeadsTable() {
                 </td>
                 <td className="px-3 py-3">
                   <select
-                    className="max-w-[140px] rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-2 py-1 text-xs"
+                    className="max-w-[160px] dash-input py-1.5 text-xs"
                     value={l.status}
                     onChange={(e) => {
                       void updateLead(l.id, {
@@ -338,7 +341,7 @@ export function LeadsTable() {
                 <td className="px-3 py-3">
                   <button
                     type="button"
-                    className="text-xs text-[var(--color-accent)] hover:underline"
+                    className="text-xs font-medium text-[var(--color-accent-hover)] hover:underline"
                     title={l.notes || "No notes"}
                     onClick={() => {
                       const t = prompt("Notes / status scratchpad", l.notes || "");
@@ -366,7 +369,7 @@ export function LeadsTable() {
           </tbody>
         </table>
         {filtered.length === 0 ? (
-          <div className="p-6 text-center text-sm text-zinc-500">
+          <div className="p-8 text-center text-sm text-[var(--color-body-muted)]">
             No leads match these filters — use Lead Finder to add real prospects.
           </div>
         ) : null}

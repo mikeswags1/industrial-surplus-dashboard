@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { DashCard } from "@/components/dash-card";
+import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
 import { LEAD_FINDER_MAX_COMBINATIONS } from "@/lib/lead-finder/engine";
 import { LEAD_FINDER_TARGET_INDUSTRIES } from "@/lib/lead-finder/target-industries";
@@ -213,36 +215,28 @@ export default function LeadFinderPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Lead Finder</h1>
-        <p className="mt-1 max-w-4xl text-sm text-zinc-500">
-          Find organizations likely to accumulate industrial assets (potential{" "}
-          <span className="text-zinc-400">sellers</span>)—not surplus resellers. Google Places searches use
-          preset industry categories across selected cities and states (one Places query per combination, up to{" "}
-          {LEAD_FINDER_MAX_COMBINATIONS}). Candidates are scored for{" "}
-          <span className="text-zinc-400">likelihood they may hold</span> excess or removable assets; they do{" "}
-          <span className="text-zinc-400">not</span> need to advertise surplus publicly. Website enrichment and
-          OpenAI review only grounded facts—then approve winners for cold outreach.
-        </p>
-      </header>
+    <div className="space-y-10 max-w-6xl">
+      <PageHeader
+        title="Lead Finder"
+        description={`Surface real businesses that may hold industrial assets (potential sellers)—not brokers. Each category × state × city runs a Places query (max ${LEAD_FINDER_MAX_COMBINATIONS} combinations). Candidates are scored; only grounded facts from enrichment and AI.`}
+      />
 
-      <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 text-sm">
+      <DashCard className="p-5 sm:p-6 text-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-medium text-zinc-300">Setup status</h2>
-            <p className="mt-1 text-zinc-500">{setupCopy(runtime)}</p>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Setup status</h2>
+            <p className="mt-1 text-[var(--color-body-muted)]">{setupCopy(runtime)}</p>
           </div>
-          <div className="text-xs text-zinc-600">
-            Required: Supabase + <code>GOOGLE_PLACES_API_KEY</code>. Optional:{" "}
-            <code>OPENAI_API_KEY</code>.
+          <div className="text-xs text-[var(--color-muted)]">
+            Required: Supabase + <code className="text-[var(--color-body)]">GOOGLE_PLACES_API_KEY</code>. Optional:{" "}
+            <code className="text-[var(--color-body)]">OPENAI_API_KEY</code>.
           </div>
         </div>
-      </section>
+      </DashCard>
 
       <form
         onSubmit={runSearch}
-        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4"
+        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 sm:p-6 space-y-6"
       >
         <div className="grid gap-4 md:grid-cols-5">
           <div className="flex flex-col gap-2 text-sm md:col-span-2">
@@ -389,7 +383,7 @@ export default function LeadFinderPage() {
         <button
           type="submit"
           disabled={loading || !combinationOk}
-          className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+          className="dash-btn-primary disabled:opacity-50"
         >
           {loading ? "Finding real companies..." : "Find surplus-holder leads"}
         </button>
@@ -429,7 +423,7 @@ export default function LeadFinderPage() {
           ) : null}
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
+        <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)]">
           <table className="min-w-[1400px] w-full text-left text-sm">
             <thead className="border-b border-[var(--color-border)] text-xs uppercase text-[var(--color-muted)]">
               <tr>
@@ -513,7 +507,7 @@ export default function LeadFinderPage() {
                       <button
                         type="button"
                         disabled={approving === c.id}
-                        className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+                        className="dash-btn-primary !px-3 !py-1.5 !text-xs disabled:opacity-50"
                         onClick={() => void approve(c.id)}
                       >
                         {approving === c.id ? "Saving..." : "Approve"}

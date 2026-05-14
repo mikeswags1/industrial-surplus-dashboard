@@ -49,14 +49,14 @@ export function AddLeadModal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)]"
+        className="dash-btn-primary"
       >
         Add lead
       </button>
       {open ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/60 p-4">
           <div
-            className="w-full max-w-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-lg rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 shadow-[var(--shadow-card)] max-h-[90vh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-lead-title"
@@ -252,7 +252,7 @@ export function AddLeadModal() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
+                  className="dash-btn-primary disabled:opacity-50"
                 >
                   {saving ? "Saving…" : "Save lead"}
                 </button>

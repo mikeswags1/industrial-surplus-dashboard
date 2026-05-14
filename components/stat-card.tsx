@@ -8,15 +8,15 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 shadow-sm">
-      <div className="text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[var(--shadow-card)] transition-colors hover:border-[rgba(255,255,255,0.1)]">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)]">
         {title}
       </div>
-      <div className="mt-2 text-2xl font-semibold tabular-nums text-zinc-50">
+      <div className="mt-3 text-3xl font-semibold tabular-nums tracking-tight text-[var(--color-heading)]">
         {value}
       </div>
       {hint ? (
-        <div className="mt-1 text-xs text-zinc-500">{hint}</div>
+        <div className="mt-2 text-xs text-[var(--color-body-muted)] leading-relaxed">{hint}</div>
       ) : null}
     </div>
   );

@@ -1,26 +1,108 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-    "Segoe UI Emoji";
-  --color-surface-0: #0a0b0d;
-  --color-surface-1: #111318;
-  --color-surface-2: #181b22;
-  --color-surface-3: #22262f;
-  --color-border: #2a2f3a;
-  --color-accent: #c45c26;
-  --color-accent-muted: #e07a3d;
-  --color-muted: #8b92a3;
+  --font-sans: var(--font-dashboard), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --color-surface-0: #07080a;
+  --color-surface-1: #0e1014;
+  --color-surface-2: #15181f;
+  --color-surface-3: #1c2029;
+  --color-surface-elevated: #12151c;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-accent: #d4692a;
+  --color-accent-hover: #e8884a;
+  /* legacy alias used across dashboard components */
+  --color-accent-muted: #e8884a;
+  --color-accent-dim: rgba(212, 105, 42, 0.14);
+  --color-muted: #7c8494;
+  --color-heading: #f4f4f5;
+  --color-body: #d4d4d8;
+  --color-body-muted: #a1a1aa;
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 4px 24px -4px rgba(0, 0, 0, 0.45), 0 12px 48px -12px rgba(0, 0, 0, 0.35);
+  --shadow-sidebar: 4px 0 32px -8px rgba(0, 0, 0, 0.4);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-[var(--color-surface-0)] text-zinc-100 antialiased;
+  @apply antialiased text-[var(--color-body)] font-sans;
+  background-color: var(--color-surface-0);
+  background-image: radial-gradient(
+      ellipse 100% 80% at 50% -30%,
+      rgba(212, 105, 42, 0.09),
+      transparent 55%
+    ),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(88, 99, 120, 0.06), transparent 50%);
+  min-height: 100vh;
 }
 
-/* subtle scrollbar for tables */
-.overflow-x-auto::-webkit-scrollbar {
+::selection {
+  background: rgba(212, 105, 42, 0.28);
+  color: var(--color-heading);
+}
+
+.dash-btn-primary {
+  @apply inline-flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors;
+  background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 16px -4px rgba(212, 105, 42, 0.45);
+}
+.dash-btn-primary:hover {
+  filter: brightness(1.06);
+}
+.dash-btn-primary:disabled {
+  @apply opacity-50 cursor-not-allowed;
+  filter: none;
+}
+
+.dash-btn-secondary {
+  @apply inline-flex items-center justify-center rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors;
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-body);
+}
+.dash-btn-secondary:hover {
+  background: var(--color-surface-3);
+  color: var(--color-heading);
+}
+
+.dash-link {
+  @apply text-sm font-medium transition-colors;
+  color: var(--color-accent-hover);
+}
+.dash-link:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dash-input {
+  @apply rounded-lg border px-3 py-2 text-sm w-full min-w-0 transition-[box-shadow,border-color];
+  border-color: var(--color-border);
+  background: var(--color-surface-0);
+  color: var(--color-body);
+}
+.dash-input:focus {
+  @apply outline-none ring-2;
+  --tw-ring-color: rgba(212, 105, 42, 0.22);
+  border-color: rgba(212, 105, 42, 0.4);
+}
+.dash-input::placeholder {
+  color: var(--color-muted);
+}
+.dash-label {
+  @apply text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-muted)];
+}
+
   height: 6px;
 }
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  @apply rounded-full bg-zinc-700;
+  @apply rounded-full;
+  background: rgba(255, 255, 255, 0.12);
+}
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
 }
