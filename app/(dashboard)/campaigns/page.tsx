@@ -84,7 +84,6 @@ export default function CampaignsPage() {
       setName("");
       setRegionCustom("");
     } catch (er) {
-      console.error(er);
       alert(er instanceof Error ? er.message : "Could not save campaign");
     }
   }

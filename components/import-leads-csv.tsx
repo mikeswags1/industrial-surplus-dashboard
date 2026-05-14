@@ -56,14 +56,14 @@ export function ImportLeadsCsv() {
       }
 
       const res = await importFromCsvText(text, tag);
-      setMsg(
-        `Imported ${res.inserted}, skipped ${res.skipped} duplicates.${
-          res.rowErrors.length
-            ? ` ${res.rowErrors.length} row errors (see console).`
-            : ""
-        }`
-      );
-      if (res.rowErrors.length) console.warn(res.rowErrors);
+      const detail =
+        res.rowErrors.length > 0
+          ? ` ${res.rowErrors.length} row error(s): ${res.rowErrors
+              .slice(0, 3)
+              .map((r) => `line ${r.line}: ${r.message}`)
+              .join("; ")}${res.rowErrors.length > 3 ? " …" : ""}`
+          : "";
+      setMsg(`Imported ${res.inserted}, skipped ${res.skipped} duplicates.${detail}`);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Import failed");
     } finally {

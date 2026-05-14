@@ -23,6 +23,11 @@ function matchesEmailFilter(label: string | undefined, filter: string) {
   return L === filter;
 }
 
+function formatLikelyAssets(types: string[] | null | undefined) {
+  const a = types ?? [];
+  return a.length ? a.join(", ") : "—";
+}
+
 function formatShortDate(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -284,7 +289,7 @@ export function LeadsTable() {
                   {l.target_industry ?? "—"}
                 </td>
                 <td className="px-3 py-3 text-xs text-zinc-500 max-w-[9rem] leading-relaxed">
-                  {(l.likely_asset_types ?? []).length ? l.likely_asset_types!.join(", ") : "—"}
+                  {formatLikelyAssets(l.likely_asset_types)}
                 </td>
                 <td className="px-3 py-3 text-xs whitespace-nowrap">
                   <span
