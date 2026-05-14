@@ -5,8 +5,7 @@ import {
   countSendEventsForLead,
   updateLeadRow,
 } from "@/lib/repositories/leads.repository";
-import type { LeadRow } from "@/lib/db/mappers";
-import { leadRowToLead } from "@/lib/db/mappers";
+import { leadRowToLead, type LeadRow } from "@/lib/db/mappers";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 

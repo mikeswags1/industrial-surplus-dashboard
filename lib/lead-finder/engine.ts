@@ -4,8 +4,10 @@ import { enrichFromWebsite } from "@/lib/enrichment/website";
 import { searchGooglePlaces } from "@/lib/lead-finder/google-places";
 import { scoreLeadFinderCandidate } from "@/lib/lead-finder/scoring";
 import type {
+  LeadFinderPlaceQuery,
   LeadFinderRunResponse,
   LeadFinderSearchInput,
+  ProviderCandidate,
   ScoredCandidate,
 } from "@/lib/lead-finder/types";
 import {
@@ -14,6 +16,11 @@ import {
   insertLeadFinderCandidates,
 } from "@/lib/repositories/lead-finder.repository";
 
+/** Max category × state × city combinations per run (each combo = one Places request). */
+export const LEAD_FINDER_MAX_COMBINATIONS = 24;
+/** After dedupe, max rows we enrich + score to control latency and API cost. */
+const MAX_SCORE_POOL = 45;
+
 export function leadFinderSetup() {
   return {
     googlePlacesConfigured: Boolean(getGooglePlacesConfig()),
@@ -21,9 +28,53 @@ export function leadFinderSetup() {
   };
 }
 
+function dedupeKey(c: ProviderCandidate): string {
+  const id = c.provider_place_id?.trim();
+  if (id) return `id:${id}`;
+  const w = c.website?.trim().toLowerCase() ?? "";
+  const name = c.company_name.trim().toLowerCase();
+  return `f:${c.state}|${name}|${w}`;
+}
+
+type LeadFinderCombo = {
+  target_industry: string;
+  state: string;
+  city: string;
+};
+
+function cartesianCombos(
+  target_industries: string[],
+  states: string[],
+  cities: string[]
+): LeadFinderCombo[] {
+  const out: LeadFinderCombo[] = [];
+  for (const target_industry of target_industries) {
+    for (const state of states) {
+      for (const city of cities) {
+        out.push({ target_industry, state, city });
+      }
+    }
+  }
+  return out;
+}
+
+function dedupeTagged(
+  rows: { c: ProviderCandidate; combo: LeadFinderCombo }[]
+): { c: ProviderCandidate; combo: LeadFinderCombo }[] {
+  const seen = new Set<string>();
+  const out: { c: ProviderCandidate; combo: LeadFinderCombo }[] = [];
+  for (const row of rows) {
+    const k = dedupeKey(row.c);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(row);
+  }
+  return out;
+}
+
 async function enrichAndScore(
-  candidate: Awaited<ReturnType<typeof searchGooglePlaces>>[number],
-  input: LeadFinderSearchInput
+  candidate: ProviderCandidate,
+  slice: Omit<LeadFinderPlaceQuery, "count">
 ): Promise<ScoredCandidate> {
   let enrichment_summary: string | null = null;
   let enrichment_source_url: string | null = null;
@@ -50,10 +101,10 @@ async function enrichAndScore(
       keywords,
     },
     {
-      target_industry: input.target_industry,
-      equipment_type: input.equipment_type,
-      city: input.city,
-      state: input.state,
+      target_industry: slice.target_industry,
+      equipment_type: slice.equipment_type,
+      city: slice.city,
+      state: slice.state,
     }
   );
 
@@ -63,7 +114,7 @@ async function enrichAndScore(
     enrichment_summary,
     enrichment_source_url,
     keywords,
-    target_industry: input.target_industry.trim(),
+    target_industry: slice.target_industry.trim(),
     ...scoring,
   };
 }
@@ -72,16 +123,70 @@ export async function runLeadFinder(
   admin: SupabaseClient,
   input: LeadFinderSearchInput
 ): Promise<LeadFinderRunResponse> {
-  const run = await createLeadFinderRun(admin, input);
-  try {
-    const providerCandidates = await searchGooglePlaces(input);
-    const scored: ScoredCandidate[] = [];
+  const target_industries = [...new Set(input.target_industries)];
+  const states = [...new Set(input.states)];
+  const cities = [...new Set(input.cities)];
 
-    for (const candidate of providerCandidates) {
-      scored.push(await enrichAndScore(candidate, input));
+  const normalized: LeadFinderSearchInput = {
+    ...input,
+    target_industries,
+    states,
+    cities,
+  };
+
+  const combos = cartesianCombos(
+    normalized.target_industries,
+    normalized.states,
+    normalized.cities
+  );
+  if (combos.length > LEAD_FINDER_MAX_COMBINATIONS) {
+    throw new Error(
+      `Too many search combinations (${combos.length}). Select at most ${LEAD_FINDER_MAX_COMBINATIONS} category × state × city combinations, or run separate searches.`
+    );
+  }
+
+  const run = await createLeadFinderRun(admin, normalized);
+  try {
+    const perComboPlaces = Math.min(
+      20,
+      Math.max(1, Math.ceil((normalized.count * 3) / Math.max(1, combos.length)))
+    );
+
+    const tagged: { c: ProviderCandidate; combo: LeadFinderCombo }[] = [];
+    for (const combo of combos) {
+      const slice: LeadFinderPlaceQuery = {
+        ...combo,
+        equipment_type: normalized.equipment_type,
+        count: perComboPlaces,
+      };
+      const batch = await searchGooglePlaces(slice);
+      for (const c of batch) tagged.push({ c, combo });
     }
 
-    const candidates = await insertLeadFinderCandidates(admin, run.id, scored);
+    let merged = dedupeTagged(tagged);
+    if (merged.length > MAX_SCORE_POOL) {
+      merged = merged.slice(0, MAX_SCORE_POOL);
+    }
+
+    const scored: ScoredCandidate[] = [];
+    for (const { c, combo } of merged) {
+      scored.push(
+        await enrichAndScore(c, {
+          target_industry: combo.target_industry,
+          equipment_type: normalized.equipment_type,
+          city: combo.city,
+          state: combo.state,
+        })
+      );
+    }
+
+    const sortScore = (c: ScoredCandidate) =>
+      c.asset_likelihood_score ?? c.score ?? Number.NEGATIVE_INFINITY;
+
+    scored.sort((a, b) => sortScore(b) - sortScore(a));
+    const trimmed = scored.slice(0, normalized.count);
+
+    const candidates = await insertLeadFinderCandidates(admin, run.id, trimmed);
     const finished = await finishLeadFinderRun(admin, run.id, {
       status: "completed",
       result_count: candidates.length,

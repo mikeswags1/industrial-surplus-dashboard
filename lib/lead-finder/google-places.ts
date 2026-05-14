@@ -1,6 +1,6 @@
 import { getGooglePlacesConfig } from "@/lib/env/server";
 import { presetForTargetIndustryLabel } from "@/lib/lead-finder/target-industries";
-import type { LeadFinderSearchInput, ProviderCandidate } from "@/lib/lead-finder/types";
+import type { LeadFinderPlaceQuery, ProviderCandidate } from "@/lib/lead-finder/types";
 
 const GOOGLE_PLACES_TEXT_SEARCH_URL =
   "https://places.googleapis.com/v1/places:searchText";
@@ -48,7 +48,7 @@ export function isGooglePlacesNotConfiguredError(err: unknown): boolean {
   return err instanceof GooglePlacesNotConfiguredError;
 }
 
-function buildTextQuery(input: LeadFinderSearchInput) {
+function buildTextQuery(input: LeadFinderPlaceQuery) {
   const preset = presetForTargetIndustryLabel(input.target_industry);
   const phrase = preset?.placesQueryPhrase ?? input.target_industry.trim();
   const city = input.city.trim();
@@ -59,7 +59,7 @@ function buildTextQuery(input: LeadFinderSearchInput) {
 
 function normalizePlace(
   place: GooglePlace,
-  input: LeadFinderSearchInput
+  input: LeadFinderPlaceQuery
 ): ProviderCandidate | null {
   const company = place.displayName?.text?.trim();
   if (!company) return null;
@@ -84,7 +84,7 @@ function normalizePlace(
 }
 
 export async function searchGooglePlaces(
-  input: LeadFinderSearchInput
+  input: LeadFinderPlaceQuery
 ): Promise<ProviderCandidate[]> {
   const cfg = getGooglePlacesConfig();
   if (!cfg) throw new GooglePlacesNotConfiguredError();

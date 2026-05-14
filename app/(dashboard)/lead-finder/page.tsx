@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useLeads } from "@/context/leads-context";
+import { LEAD_FINDER_MAX_COMBINATIONS } from "@/lib/lead-finder/engine";
 import { LEAD_FINDER_TARGET_INDUSTRIES } from "@/lib/lead-finder/target-industries";
 import type {
   LeadFinderCandidate,
@@ -42,9 +43,9 @@ export default function LeadFinderPage() {
     LEAD_FINDER_TARGET_INDUSTRIES.find((p) => p.label === "Electrical Contractors")?.label ??
     LEAD_FINDER_TARGET_INDUSTRIES[0].label;
 
-  const [state, setState] = useState<USState>("TX");
-  const [city, setCity] = useState<string>("Houston");
-  const [targetIndustry, setTargetIndustry] = useState<string>(defaultPreset);
+  const [selectedStates, setSelectedStates] = useState<USState[]>(["TX"]);
+  const [citiesText, setCitiesText] = useState("Houston");
+  const [targetIndustries, setTargetIndustries] = useState<string[]>([defaultPreset]);
   const [equipment, setEquipment] = useState<EquipmentType>(EQUIPMENT_TYPES[0]);
   const [count, setCount] = useState(10);
   const [runtime, setRuntime] = useState<RuntimeConfig | null>(null);
@@ -63,6 +64,54 @@ export default function LeadFinderPage() {
 
   const candidates = useMemo(() => result?.candidates ?? [], [result]);
 
+  const parsedCities = useMemo(() => {
+    const parts = citiesText
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return [...new Set(parts)];
+  }, [citiesText]);
+
+  const combinationCount = useMemo(
+    () => targetIndustries.length * selectedStates.length * parsedCities.length,
+    [targetIndustries.length, selectedStates.length, parsedCities.length]
+  );
+
+  const combinationOk =
+    combinationCount > 0 &&
+    combinationCount <= LEAD_FINDER_MAX_COMBINATIONS &&
+    targetIndustries.length > 0 &&
+    selectedStates.length > 0 &&
+    parsedCities.length > 0;
+
+  function toggleTargetIndustry(label: string) {
+    setTargetIndustries((prev) =>
+      prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]
+    );
+  }
+
+  function toggleStateSel(s: USState) {
+    setSelectedStates((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    );
+  }
+
+  function selectAllIndustries() {
+    setTargetIndustries(LEAD_FINDER_TARGET_INDUSTRIES.map((p) => p.label));
+  }
+
+  function clearIndustries() {
+    setTargetIndustries([]);
+  }
+
+  function selectAllStates() {
+    setSelectedStates([...US_STATES]);
+  }
+
+  function clearStates() {
+    setSelectedStates([]);
+  }
+
   async function runSearch(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -73,9 +122,9 @@ export default function LeadFinderPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          state,
-          city,
-          target_industry: targetIndustry,
+          target_industries: targetIndustries,
+          states: selectedStates,
+          cities: parsedCities,
           equipment_type: equipment,
           count,
         }),
@@ -170,7 +219,8 @@ export default function LeadFinderPage() {
         <p className="mt-1 max-w-4xl text-sm text-zinc-500">
           Find organizations likely to accumulate industrial assets (potential{" "}
           <span className="text-zinc-400">sellers</span>)—not surplus resellers. Google Places searches use
-          preset industry categories plus city/state. Candidates are scored for{" "}
+          preset industry categories across selected cities and states (one Places query per combination, up to{" "}
+          {LEAD_FINDER_MAX_COMBINATIONS}). Candidates are scored for{" "}
           <span className="text-zinc-400">likelihood they may hold</span> excess or removable assets; they do{" "}
           <span className="text-zinc-400">not</span> need to advertise surplus publicly. Website enrichment and
           OpenAI review only grounded facts—then approve winners for cold outreach.
@@ -195,28 +245,53 @@ export default function LeadFinderPage() {
         className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 space-y-4"
       >
         <div className="grid gap-4 md:grid-cols-5">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-400">State</span>
-            <select
-              className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2"
-              value={state}
-              onChange={(e) => setState(e.target.value as USState)}
-            >
+          <div className="flex flex-col gap-2 text-sm md:col-span-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-zinc-400">States (multi-select)</span>
+              <span className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={selectAllStates}
+                  className="rounded border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={clearStates}
+                  className="rounded border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-[11px] text-zinc-400 hover:bg-zinc-800"
+                >
+                  Clear
+                </button>
+              </span>
+            </div>
+            <div className="max-h-40 overflow-y-auto rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] p-2 grid grid-cols-2 sm:grid-cols-3 gap-x-2 gap-y-1">
               {US_STATES.map((s) => (
-                <option key={s} value={s}>
+                <label key={s} className="flex items-center gap-1.5 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-[var(--color-border)]"
+                    checked={selectedStates.includes(s)}
+                    onChange={() => toggleStateSel(s)}
+                  />
                   {s}
-                </option>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
           <label className="flex flex-col gap-1 text-sm md:col-span-1">
-            <span className="text-zinc-400">City</span>
-            <input
+            <span className="text-zinc-400">Cities</span>
+            <textarea
               required
-              className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
+              rows={5}
+              placeholder={'Houston\nDallas\nAustin'}
+              className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2 text-sm min-h-[7rem] resize-y"
+              value={citiesText}
+              onChange={(e) => setCitiesText(e.target.value)}
             />
+            <span className="text-[11px] text-zinc-600">
+              One city per line or comma-separated. Each is combined with every selected state and category.
+            </span>
           </label>
           <label className="flex flex-col gap-1 text-sm md:col-span-2">
             <span className="text-zinc-400">Equipment focus</span>
@@ -250,28 +325,33 @@ export default function LeadFinderPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="flex flex-col gap-1 text-sm max-w-xl">
-            <span className="text-zinc-400">Target industry category</span>
-            <select
-              className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2"
-              value={targetIndustry}
-              onChange={(e) => setTargetIndustry(e.target.value)}
-            >
-              {LEAD_FINDER_TARGET_INDUSTRIES.map((p) => (
-                <option key={p.label} value={p.label}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2 max-w-4xl">
+            <span className="text-sm text-zinc-400">Target industry categories (multi-select)</span>
+            <span className="flex gap-1">
+              <button
+                type="button"
+                onClick={selectAllIndustries}
+                className="rounded border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={clearIndustries}
+                className="rounded border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-0.5 text-[11px] text-zinc-400 hover:bg-zinc-800"
+              >
+                Clear
+              </button>
+            </span>
+          </div>
           <div className="flex flex-wrap gap-2 max-h-[9.5rem] overflow-y-auto pr-1 pb-1">
             {LEAD_FINDER_TARGET_INDUSTRIES.map((p) => (
               <button
                 key={`chip-${p.label}`}
                 type="button"
-                onClick={() => setTargetIndustry(p.label)}
+                onClick={() => toggleTargetIndustry(p.label)}
                 className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                  targetIndustry === p.label
+                  targetIndustries.includes(p.label)
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)]/15 text-zinc-100"
                     : "border-[var(--color-border)] text-zinc-400 hover:bg-[var(--color-surface-2)]"
                 }`}
@@ -281,17 +361,34 @@ export default function LeadFinderPage() {
             ))}
           </div>
           <p className="text-xs text-zinc-600 max-w-3xl">
-            Text search mirrors natural queries such as{' '}
+            Each selected category runs a Places query per city/state pair (e.g.{' '}
             <span className="text-zinc-500">
-              electrical contractors in {city}, {state}
+              electrical contractors in {parsedCities[0] ?? "your city"},{" "}
+              {selectedStates[0] ?? "ST"}
             </span>
-            .
+            ). Keep the product of categories × states × cities at or below{" "}
+            {LEAD_FINDER_MAX_COMBINATIONS} (currently{" "}
+            <span className={combinationOk ? "text-zinc-500" : "text-amber-400"}>
+              {combinationCount}
+            </span>
+            ).
           </p>
+          {!combinationOk && combinationCount > LEAD_FINDER_MAX_COMBINATIONS ? (
+            <p className="text-xs text-amber-400" role="alert">
+              Too many combinations ({combinationCount}). Lower selections so categories × states × cities ≤{" "}
+              {LEAD_FINDER_MAX_COMBINATIONS}, or run separate searches.
+            </p>
+          ) : null}
+          {!combinationOk && combinationCount <= LEAD_FINDER_MAX_COMBINATIONS ? (
+            <p className="text-xs text-amber-400" role="alert">
+              Select at least one category, state, and city.
+            </p>
+          ) : null}
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !combinationOk}
           className="rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--color-accent-muted)] disabled:opacity-50"
         >
           {loading ? "Finding real companies..." : "Find surplus-holder leads"}
@@ -361,7 +458,7 @@ export default function LeadFinderPage() {
                     </div>
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {c.city || city}, {c.state || state}
+                    {c.city || "—"}, {c.state || "—"}
                   </td>
                   <td className="px-3 py-3">{c.phone || "—"}</td>
                   <td className="px-3 py-3">

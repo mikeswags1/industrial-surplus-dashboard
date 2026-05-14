@@ -1,10 +1,5 @@
 import type { Lead } from "@/lib/types";
 
-export type OutreachTimestamps = {
-  lastSendIso: string | null;
-  lastReplyIso: string | null;
-};
-
 function daysBetween(fromMs: number, toMs: number): number {
   return Math.max(0, Math.floor((toMs - fromMs) / 86_400_000));
 }

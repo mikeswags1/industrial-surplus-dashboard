@@ -12,12 +12,27 @@ export type LeadFinderCandidateStatus =
   | "duplicate"
   | "error";
 
-export type LeadFinderSearchInput = {
+/** Single Google Places query + scoring slice (one category × one city × one state). */
+export type LeadFinderPlaceQuery = {
   state: string;
   city: string;
   /** One of LEAD_FINDER_TARGET_INDUSTRIES labels — companies likely to hold surplus assets. */
   target_industry: string;
   equipment_type: string;
+  /** Results to request from Places for this slice (1–20). */
+  count: number;
+};
+
+/**
+ * Batch search: cartesian product of categories × states × cities.
+ * The engine dedupes across slices, scores candidates, and returns up to `count` rows.
+ */
+export type LeadFinderSearchInput = {
+  states: string[];
+  cities: string[];
+  target_industries: string[];
+  equipment_type: string;
+  /** Max candidates to return after scoring (1–20). */
   count: number;
 };
 

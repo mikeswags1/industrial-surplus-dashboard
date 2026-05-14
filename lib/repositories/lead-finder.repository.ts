@@ -15,6 +15,13 @@ import {
 } from "@/lib/lead-finder/mappers";
 import type { Lead } from "@/lib/types";
 
+function summarizeList(parts: string[], maxShown = 3): string {
+  const u = [...new Set(parts.map((p) => p.trim()).filter(Boolean))];
+  if (u.length === 0) return "";
+  if (u.length <= maxShown) return u.join(", ");
+  return `${u.slice(0, maxShown).join(", ")} +${u.length - maxShown}`;
+}
+
 export async function createLeadFinderRun(
   admin: SupabaseClient,
   input: LeadFinderSearchInput
@@ -24,9 +31,9 @@ export async function createLeadFinderRun(
     .insert({
       provider: "google_places",
       status: "running",
-      state: input.state,
-      city: input.city,
-      industry: input.target_industry,
+      state: summarizeList(input.states),
+      city: summarizeList(input.cities),
+      industry: summarizeList(input.target_industries),
       equipment_type: input.equipment_type,
       requested_count: input.count,
     })
