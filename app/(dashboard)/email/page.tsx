@@ -13,11 +13,11 @@ type GenBody = {
 };
 
 export default function EmailGeneratorPage() {
-  const [industry, setIndustry] = useState("Manufacturing");
+  const [industry, setIndustry] = useState<string>("Manufacturing");
   const [equipment, setEquipment] = useState<EquipmentType>(EQUIPMENT_TYPES[0]);
   const [state, setState] = useState<USState>("TX");
   const [company, setCompany] = useState("");
-  const [pain, setPain] = useState(
+  const [pain, setPain] = useState<string>(
     "Idle assets taking floor space; need quick valuation and pickup."
   );
   const [loading, setLoading] = useState(false);

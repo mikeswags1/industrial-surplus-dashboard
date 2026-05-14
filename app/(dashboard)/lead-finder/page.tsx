@@ -43,7 +43,7 @@ export default function LeadFinderPage() {
     LEAD_FINDER_TARGET_INDUSTRIES[0].label;
 
   const [state, setState] = useState<USState>("TX");
-  const [city, setCity] = useState("Houston");
+  const [city, setCity] = useState<string>("Houston");
   const [targetIndustry, setTargetIndustry] = useState<string>(defaultPreset);
   const [equipment, setEquipment] = useState<EquipmentType>(EQUIPMENT_TYPES[0]);
   const [count, setCount] = useState(10);

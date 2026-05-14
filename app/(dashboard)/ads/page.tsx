@@ -14,7 +14,7 @@ export default function AdScriptsPage() {
   const [angle, setAngle] = useState<AdAnglePreset>(AD_ANGLE_PRESETS[0]);
   const [equipment, setEquipment] = useState<EquipmentType>(EQUIPMENT_TYPES[0]);
   const [state, setState] = useState<USState>("TX");
-  const [extra, setExtra] = useState(
+  const [extra, setExtra] = useState<string>(
     "Fast cash quotes, free evaluations, nationwide pickup."
   );
   const [loading, setLoading] = useState(false);
