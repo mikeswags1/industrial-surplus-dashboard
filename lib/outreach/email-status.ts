@@ -37,12 +37,16 @@ export function attachOutreachToLead(
   lead: Lead,
   lastSendIso: string | null,
   lastReplyIso: string | null,
+  emailSendCount = 0,
+  inboundReplyCount = 0,
   nowMs?: number
 ): Lead {
   return {
     ...lead,
     last_email_sent_at: lastSendIso,
     reply_logged_at: lastReplyIso,
+    email_send_count: emailSendCount,
+    inbound_reply_count: inboundReplyCount,
     email_status_label: computeEmailStatusLabel(lead, lastSendIso, lastReplyIso, nowMs),
   };
 }

@@ -40,20 +40,29 @@ export async function queryExistingDedupeKeys(
 
 type LogRow = { lead_id: string | null; event_type: string; created_at: string };
 
+type LeadOutreachAgg = {
+  lastSend: string | null;
+  lastReply: string | null;
+  sendCount: number;
+  replyCount: number;
+};
+
 function aggregateOutreachByLeadId(logs: LogRow[]) {
-  const map = new Map<string, { lastSend: string | null; lastReply: string | null }>();
+  const map = new Map<string, LeadOutreachAgg>();
   for (const row of logs) {
     const id = row.lead_id;
     if (!id) continue;
     let e = map.get(id);
     if (!e) {
-      e = { lastSend: null, lastReply: null };
+      e = { lastSend: null, lastReply: null, sendCount: 0, replyCount: 0 };
       map.set(id, e);
     }
     if (row.event_type === "send") {
+      e.sendCount += 1;
       if (!e.lastSend || row.created_at > e.lastSend) e.lastSend = row.created_at;
     }
     if (row.event_type === "reply") {
+      e.replyCount += 1;
       if (!e.lastReply || row.created_at > e.lastReply) e.lastReply = row.created_at;
     }
   }
@@ -86,8 +95,19 @@ export async function fetchLeads(
 
   const agg = aggregateOutreachByLeadId((logs ?? []) as LogRow[]);
   return base.map((lead) => {
-    const o = agg.get(lead.id) ?? { lastSend: null, lastReply: null };
-    return attachOutreachToLead(lead, o.lastSend, o.lastReply);
+    const o = agg.get(lead.id) ?? {
+      lastSend: null,
+      lastReply: null,
+      sendCount: 0,
+      replyCount: 0,
+    };
+    return attachOutreachToLead(
+      lead,
+      o.lastSend,
+      o.lastReply,
+      o.sendCount,
+      o.replyCount
+    );
   });
 }
 
@@ -191,4 +211,125 @@ export async function insertManualReplyLog(
     meta: { source: "dashboard_manual" },
   });
   if (error) throw new Error(error.message);
+}
+
+export async function findLeadByEmailCaseInsensitive(
+  admin: SupabaseClient,
+  email: string
+): Promise<{ id: string; status: LeadStatus } | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized.includes("@")) return null;
+  const { data, error } = await admin
+    .from("leads")
+    .select("id, status")
+    .ilike("email", normalized)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return { id: data.id as string, status: data.status as LeadStatus };
+}
+
+export async function outreachLogExistsWithProviderMessageId(
+  admin: SupabaseClient,
+  providerMessageId: string
+): Promise<boolean> {
+  const id = providerMessageId.trim();
+  if (!id) return false;
+  const { data, error } = await admin
+    .from("outreach_logs")
+    .select("id")
+    .eq("provider_message_id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return Boolean(data);
+}
+
+/** Inbound email (e.g. Resend `email.received`): logs reply, optional inbound_replies row, sets status Replied when matched. */
+export async function recordInboundReplyFromProvider(
+  admin: SupabaseClient,
+  args: {
+    providerMessageId: string;
+    fromEmail: string;
+    subject: string | null;
+    snippet: string | null;
+    toEmails: string[];
+    rawPayload: Record<string, unknown>;
+  }
+): Promise<{ duplicate: boolean; leadId: string | null }> {
+  if (await outreachLogExistsWithProviderMessageId(admin, args.providerMessageId)) {
+    return { duplicate: true, leadId: null };
+  }
+
+  const lead = await findLeadByEmailCaseInsensitive(admin, args.fromEmail);
+  const subject = args.subject?.trim() || "(no subject)";
+  const preview = (args.snippet ?? "").trim().slice(0, 240);
+
+  const { data: logRow, error: logErr } = await admin
+    .from("outreach_logs")
+    .insert({
+      event_type: "reply",
+      provider: "resend",
+      provider_message_id: args.providerMessageId,
+      from_email: args.fromEmail.trim().toLowerCase(),
+      to_email: args.toEmails[0]?.trim().toLowerCase() ?? null,
+      subject,
+      body_preview: preview || "Inbound reply (webhook)",
+      lead_id: lead?.id ?? null,
+      meta: {
+        source: "resend_webhook",
+        event: "email.received",
+        to: args.toEmails,
+      },
+    })
+    .select("id")
+    .single();
+  if (logErr) throw new Error(logErr.message);
+
+  if (lead?.id && logRow?.id) {
+    const { error: irErr } = await admin.from("inbound_replies").insert({
+      lead_id: lead.id,
+      outreach_log_id: logRow.id as string,
+      subject,
+      snippet: preview || null,
+      raw_headers: args.rawPayload,
+    });
+    if (irErr) {
+      // Optional audit row; outreach_logs still records the reply.
+    }
+
+    const terminal: LeadStatus[] = ["Deal Won", "Not Interested"];
+    if (!terminal.includes(lead.status)) {
+      await updateLeadRow(admin, lead.id, { status: "Replied" });
+    }
+  }
+
+  return { duplicate: false, leadId: lead?.id ?? null };
+}
+
+export async function recordDeliveryIssueFromProvider(
+  admin: SupabaseClient,
+  eventType: "bounce" | "complaint",
+  args: {
+    providerMessageId: string | null;
+    recipientEmail: string;
+    detail: Record<string, unknown>;
+  }
+): Promise<void> {
+  const dedupe = (args.providerMessageId ?? "").trim() || JSON.stringify(args.detail).slice(0, 80);
+  const dedupeId = `${eventType}:${dedupe}`.slice(0, 200);
+  if (await outreachLogExistsWithProviderMessageId(admin, dedupeId)) {
+    return;
+  }
+
+  const lead = await findLeadByEmailCaseInsensitive(admin, args.recipientEmail);
+  await admin.from("outreach_logs").insert({
+    event_type: eventType,
+    provider: "resend",
+    provider_message_id: dedupeId,
+    to_email: args.recipientEmail.trim().toLowerCase(),
+    lead_id: lead?.id ?? null,
+    subject: eventType === "bounce" ? "Email bounced" : "Spam complaint",
+    body_preview: (JSON.stringify(args.detail) ?? "").slice(0, 240),
+    meta: { source: "resend_webhook", ...args.detail },
+  });
 }

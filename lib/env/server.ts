@@ -84,6 +84,12 @@ export function isOpenAiConfigured(): boolean {
   return Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
+/** Svix signing secret from Resend → Webhooks → your endpoint (verifies inbound/bounce events). */
+export function getResendWebhookSecret(): string | null {
+  const s = process.env.RESEND_WEBHOOK_SECRET?.trim();
+  return s ? s : null;
+}
+
 /** Safe diagnostics for /api/health — no secrets returned. */
 export function getServerHealthSnapshot(): {
   supabase: "ok" | "missing";

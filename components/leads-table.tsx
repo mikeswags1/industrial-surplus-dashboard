@@ -307,10 +307,16 @@ export function LeadsTable() {
                   </span>
                 </td>
                 <td className="px-3 py-3 text-xs whitespace-nowrap tabular-nums">
-                  {formatShortDate(l.last_email_sent_at)}
+                  <span>{formatShortDate(l.last_email_sent_at)}</span>
+                  {(l.email_send_count ?? 0) > 1 ? (
+                    <span className="ml-1 text-zinc-500">×{l.email_send_count}</span>
+                  ) : null}
                 </td>
                 <td className="px-3 py-3 text-xs whitespace-nowrap tabular-nums">
-                  {formatShortDate(l.reply_logged_at)}
+                  <span>{formatShortDate(l.reply_logged_at)}</span>
+                  {(l.inbound_reply_count ?? 0) > 1 ? (
+                    <span className="ml-1 text-zinc-500">×{l.inbound_reply_count}</span>
+                  ) : null}
                 </td>
                 <td className="px-3 py-3">
                   <select

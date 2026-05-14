@@ -170,8 +170,13 @@ export default function SendEmailsPage() {
           <Link href="/leads" className="text-[var(--color-accent)] hover:underline">
             Leads
           </Link>{" "}
-          list (with valid emails), polish the draft, then send in small batches. Each send is
-          logged; duplicate sends require confirmation.
+          list (with valid emails), polish the draft, then send in small batches. Outbound sends and
+          manual “replied” marks are logged in{" "}
+          <code className="text-zinc-400">outreach_logs</code>. For automatic reply detection, add a
+          Resend webhook to your deployed{" "}
+          <code className="text-zinc-400">/api/webhooks/resend</code> URL and set{" "}
+          <code className="text-zinc-400">RESEND_WEBHOOK_SECRET</code>; inbound mail must match a lead’s
+          email address. Duplicate sends require confirmation here.
         </p>
       </header>
 
