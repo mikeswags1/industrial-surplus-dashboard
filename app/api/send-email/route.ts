@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const cfg = getResendConfig();
   if (!cfg) {
     return NextResponse.json(
-      { error: "Resend not configured (RESEND_API_KEY, RESEND_FROM_EMAIL)" },
+      { error: "RESEND_API_KEY is not set. Add it under Vercel → Environment Variables (or .env.local)." },
       { status: 501 }
     );
   }
@@ -72,7 +72,22 @@ export async function POST(request: Request) {
         .maybeSingle();
       orgId = (data?.organization_id as string | undefined) ?? null;
     }
-    identity = await resolveOutboundIdentity(admin, orgId);
+    try {
+      identity = await resolveOutboundIdentity(admin, orgId);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not resolve sender";
+      return NextResponse.json({ error: msg }, { status: 501 });
+    }
+  }
+
+  if (!identity.from?.trim()) {
+    return NextResponse.json(
+      {
+        error:
+          "No verified From address yet. Save Outbound sender in Settings or set RESEND_FROM_EMAIL.",
+      },
+      { status: 501 }
+    );
   }
 
   const sent = await sendWithResend({

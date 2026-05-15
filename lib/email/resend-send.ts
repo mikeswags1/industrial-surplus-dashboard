@@ -18,10 +18,19 @@ export type SendEmailResult =
 
 export async function sendWithResend(input: SendEmailInput): Promise<SendEmailResult> {
   const cfg = getResendConfig();
-  if (!cfg) return { ok: false, error: "Resend not configured (RESEND_API_KEY, RESEND_FROM_EMAIL)" };
+  if (!cfg)
+    return { ok: false, error: "RESEND_API_KEY is not configured — cannot send mail." };
+
+  const from = input.from?.trim() || cfg.from?.trim();
+  if (!from) {
+    return {
+      ok: false,
+      error:
+        "Missing From address: set RESEND_FROM_EMAIL or save Outbound sender in Settings (inboxes table).",
+    };
+  }
 
   const resend = new Resend(cfg.apiKey);
-  const from = input.from?.trim() || cfg.from;
   const replyTo = input.replyTo?.trim();
 
   const { data, error } = await resend.emails.send({

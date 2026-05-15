@@ -22,7 +22,8 @@ export async function processCampaignQueueOnce(limit = 5): Promise<{
   const errors: string[] = [];
   const admin = getSupabaseAdmin();
   if (!admin) return { processed: 0, errors: ["Supabase not configured"] };
-  if (!getResendConfig()) return { processed: 0, errors: ["Resend not configured"] };
+  if (!getResendConfig())
+    return { processed: 0, errors: ["RESEND_API_KEY not set — add it to the server environment"] };
 
   const now = new Date().toISOString();
   const { data: jobs, error: qErr } = await admin

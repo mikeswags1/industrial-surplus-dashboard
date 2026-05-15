@@ -17,7 +17,7 @@ export async function resolveOutboundIdentity(
 ): Promise<{ from: string; replyTo: string | null }> {
   const cfg = getResendConfig();
   if (!cfg) {
-    throw new Error("Resend not configured (RESEND_API_KEY, RESEND_FROM_EMAIL)");
+    throw new Error("RESEND_API_KEY is not set — add it in Vercel / .env to send mail.");
   }
 
   const orgId = organizationId ?? DEFAULT_ORGANIZATION_ID;
@@ -34,15 +34,21 @@ export async function resolveOutboundIdentity(
   if (error) throw new Error(error.message);
 
   const row = data as Pick<InboxRow, "from_email" | "reply_to_email"> | null;
-  const from = row?.from_email?.trim();
-  if (from) {
+  const inboxFrom = row?.from_email?.trim();
+  if (inboxFrom) {
     return {
-      from,
+      from: inboxFrom,
       replyTo: row?.reply_to_email?.trim() || null,
     };
   }
 
-  return { from: cfg.from, replyTo: null };
+  const fallback = cfg.from?.trim();
+  if (!fallback) {
+    throw new Error(
+      "No sender address: save one under Settings → Outbound sender, or set RESEND_FROM_EMAIL in your environment."
+    );
+  }
+  return { from: fallback, replyTo: null };
 }
 
 export async function listInboxesForOrganization(

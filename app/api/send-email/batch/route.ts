@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   const cfg = getResendConfig();
   if (!cfg) {
     return NextResponse.json(
-      { error: "Resend not configured (RESEND_API_KEY, RESEND_FROM_EMAIL)" },
+      { error: "RESEND_API_KEY is not set. Add it under Vercel → Environment Variables (or .env.local)." },
       { status: 501 }
     );
   }
@@ -106,7 +106,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const identity = await resolveOutboundIdentity(admin, lead.organization_id ?? null);
+    let identity: { from: string; replyTo: string | null };
+    try {
+      identity = await resolveOutboundIdentity(admin, lead.organization_id ?? null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not resolve sender";
+      results.push({ leadId, ok: false, error: msg });
+      continue;
+    }
 
     const sent = await sendWithResend({
       to,

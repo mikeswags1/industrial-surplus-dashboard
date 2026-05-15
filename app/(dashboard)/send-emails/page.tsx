@@ -296,9 +296,10 @@ export default function SendEmailsPage() {
           ) : null}
           {resultMsg ? <p className="text-sm text-emerald-400">{resultMsg}</p> : null}
           <p className="text-xs text-zinc-600">
-            Requires{" "}
-            <code className="text-zinc-400">RESEND_API_KEY</code> and{" "}
-            <code className="text-zinc-400">RESEND_FROM_EMAIL</code>. Hourly caps apply via{" "}
+            Needs a Resend{" "}
+            <code className="text-zinc-400">RESEND_API_KEY</code>. Your &quot;from&quot; address comes from{" "}
+            <strong className="text-zinc-500">Settings → Outbound sender</strong>, or fallback{" "}
+            <code className="text-zinc-400">RESEND_FROM_EMAIL</code>. Caps:{" "}
             <code className="text-zinc-400">OUTBOUND_MAX_SENDS_PER_HOUR</code>.
           </p>
         </section>

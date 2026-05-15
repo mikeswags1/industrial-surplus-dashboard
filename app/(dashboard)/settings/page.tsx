@@ -105,15 +105,9 @@ export default function SettingsPage() {
             <span className="text-zinc-500">server only</span>; powers real Lead Finder provider search
           </li>
           <li>
-            <code className="text-zinc-300">RESEND_API_KEY</code> +{" "}
-            <code className="text-zinc-300">RESEND_FROM_EMAIL</code> — required API key;{" "}
-            <span className="text-zinc-500">
-              from address fallback when no row exists in <code className="text-zinc-400">inboxes</code>
-            </span>{" "}
-            (<Link href="#outbound-sender" className="text-[var(--color-accent)] hover:underline">
-              configure below
-            </Link>
-            )
+            <code className="text-zinc-300">RESEND_API_KEY</code> — required to send mail. Your default
+            &quot;from&quot; address is stored in Settings below or via{" "}
+            <code className="text-zinc-300">RESEND_FROM_EMAIL</code> if no inbox row exists.
           </li>
           <li>
             <code className="text-zinc-300">OUTBOUND_MAX_SENDS_PER_HOUR</code> — optional cap (default 100)

@@ -12,8 +12,9 @@ const supabaseServerSchema = z.object({
 });
 
 const resendSchema = z.object({
-  apiKey: z.string().min(1),
-  from: z.string().min(3),
+  apiKey: z.string().min(1, "RESEND_API_KEY is required to send mail"),
+  /** Fallback when no `inboxes` row — verified sender in Resend (optional if inbox is configured). */
+  from: z.string().nullable(),
 });
 
 const googlePlacesSchema = z.object({
@@ -55,11 +56,20 @@ export function isSupabaseServerConfigured(): boolean {
 export function parseResendEnv():
   | { ok: true; value: z.infer<typeof resendSchema> }
   | { ok: false; issues: string[] } {
-  const raw = {
-    apiKey: process.env.RESEND_API_KEY?.trim(),
-    from: process.env.RESEND_FROM_EMAIL?.trim(),
-  };
-  const r = resendSchema.safeParse(raw);
+  const apiKeyRaw = process.env.RESEND_API_KEY?.trim();
+  if (!apiKeyRaw) {
+    return { ok: false, issues: ["RESEND_API_KEY is required to send mail via Resend"] };
+  }
+  const fromRaw = process.env.RESEND_FROM_EMAIL?.trim();
+  let from: string | null = null;
+  if (fromRaw) {
+    const oneLine = fromRaw.replace(/\s+/g, " ");
+    const angle = oneLine.match(/^(.+?)\s*<([^>]+)>$/);
+    const emailPart = (angle?.[2] ?? oneLine).trim();
+    const emailLike = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailPart);
+    from = emailLike ? fromRaw : null;
+  }
+  const r = resendSchema.safeParse({ apiKey: apiKeyRaw, from });
   if (!r.success) {
     return {
       ok: false,
@@ -69,7 +79,8 @@ export function parseResendEnv():
   return { ok: true, value: r.data };
 }
 
-export function getResendConfig(): { apiKey: string; from: string } | null {
+/** Resend is available for API calls once `RESEND_API_KEY` is set. `from` may be null until inbox or `RESEND_FROM_EMAIL` is configured. */
+export function getResendConfig(): { apiKey: string; from: string | null } | null {
   const p = parseResendEnv();
   return p.ok ? p.value : null;
 }
@@ -103,6 +114,9 @@ export function getServerHealthSnapshot(): {
   if (!sb.ok) issues.push(...sb.issues.map((i) => `supabase: ${i}`));
   const rs = parseResendEnv();
   if (!rs.ok) issues.push(...rs.issues.map((i) => `resend: ${i}`));
+  else if (!rs.value.from) {
+    issues.push("resend: RESEND_FROM_EMAIL not set (optional if Outbound sender saved in Settings → inboxes)");
+  }
 
   return {
     supabase: sb.ok ? "ok" : "missing",
