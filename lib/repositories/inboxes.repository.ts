@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeResendFromHeader } from "@/lib/email/normalize-resend-from";
 import { getResendConfig } from "@/lib/env/server";
 import { DEFAULT_ORGANIZATION_ID } from "@/lib/tenant/default-org";
 import type { InboxRow } from "@/lib/database/types";
@@ -36,8 +37,14 @@ export async function resolveOutboundIdentity(
   const row = data as Pick<InboxRow, "from_email" | "reply_to_email"> | null;
   const inboxFrom = row?.from_email?.trim();
   if (inboxFrom) {
+    const norm = normalizeResendFromHeader(inboxFrom);
+    if (!norm.ok) {
+      throw new Error(
+        `${norm.reason} Update it under Settings → Outbound sender.`
+      );
+    }
     return {
-      from: inboxFrom,
+      from: norm.from,
       replyTo: row?.reply_to_email?.trim() || null,
     };
   }
@@ -48,7 +55,11 @@ export async function resolveOutboundIdentity(
       "No sender address: save one under Settings → Outbound sender, or set RESEND_FROM_EMAIL in your environment."
     );
   }
-  return { from: fallback, replyTo: null };
+  const norm = normalizeResendFromHeader(fallback);
+  if (!norm.ok) {
+    throw new Error(`${norm.reason} Check RESEND_FROM_EMAIL in Vercel.`);
+  }
+  return { from: norm.from, replyTo: null };
 }
 
 export async function listInboxesForOrganization(

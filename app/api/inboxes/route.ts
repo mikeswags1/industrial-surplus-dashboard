@@ -10,6 +10,7 @@ import {
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 import { DEFAULT_ORGANIZATION_ID } from "@/lib/tenant/default-org";
 import { isBlockedResendFromDomain } from "@/lib/email/resend-from-validation";
+import { normalizeResendFromHeader } from "@/lib/email/normalize-resend-from";
 
 /** List sending identities for the default workspace (multi-org: extend with query param later). */
 export async function GET() {
@@ -53,7 +54,12 @@ export async function PUT(request: Request) {
       );
     }
 
-    if (isBlockedResendFromDomain(fromEmail)) {
+    const norm = normalizeResendFromHeader(fromEmail);
+    if (!norm.ok) {
+      return NextResponse.json({ error: norm.reason }, { status: 400 });
+    }
+
+    if (isBlockedResendFromDomain(norm.from)) {
       return NextResponse.json(
         {
           error:
@@ -65,7 +71,7 @@ export async function PUT(request: Request) {
 
     const inbox = await upsertDefaultInbox(admin, {
       displayName: body.displayName?.trim() || "Outbound",
-      fromEmail,
+      fromEmail: norm.from,
       replyToEmail: body.replyToEmail ?? null,
       domain: body.domain ?? null,
     });

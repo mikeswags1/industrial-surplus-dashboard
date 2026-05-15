@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { normalizeResendFromHeader } from "@/lib/email/normalize-resend-from";
 import { getResendConfig } from "@/lib/env/server";
 
 export type SendEmailInput = {
@@ -21,8 +22,8 @@ export async function sendWithResend(input: SendEmailInput): Promise<SendEmailRe
   if (!cfg)
     return { ok: false, error: "RESEND_API_KEY is not configured — cannot send mail." };
 
-  const from = input.from?.trim() || cfg.from?.trim();
-  if (!from) {
+  const fromRaw = input.from?.trim() || cfg.from?.trim();
+  if (!fromRaw) {
     return {
       ok: false,
       error:
@@ -30,11 +31,16 @@ export async function sendWithResend(input: SendEmailInput): Promise<SendEmailRe
     };
   }
 
+  const normFrom = normalizeResendFromHeader(fromRaw);
+  if (!normFrom.ok) {
+    return { ok: false, error: normFrom.reason };
+  }
+
   const resend = new Resend(cfg.apiKey);
   const replyTo = input.replyTo?.trim();
 
   const { data, error } = await resend.emails.send({
-    from,
+    from: normFrom.from,
     to: input.to,
     subject: input.subject,
     html: input.html,
