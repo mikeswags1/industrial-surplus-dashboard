@@ -26,6 +26,28 @@ function plainBodyToHtml(text: string) {
     .join("");
 }
 
+/** Appended when “Include website link at end” is on. */
+const OUTBOUND_WEBSITE_FOOTER_URL = "https://www.selectsurplususa.com/";
+
+function appendWebsiteFooter(
+  plainBody: string,
+  enabled: boolean
+): { body: string; html: string } {
+  if (!enabled) {
+    return { body: plainBody, html: plainBodyToHtml(plainBody) };
+  }
+  const url = OUTBOUND_WEBSITE_FOOTER_URL.trim();
+  const body = `${plainBody.replace(/\s+$/, "")}\n\n${url}`;
+  const esc = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const escAttr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+  const footerHtml = `<p style="margin-top:12px;line-height:1.5;font-size:14px"><a href="${escAttr(url)}" rel="noopener noreferrer">${esc(url)}</a></p>`;
+  return {
+    body,
+    html: plainBodyToHtml(plainBody) + footerHtml,
+  };
+}
+
 export default function SendEmailsPage() {
   const { leads, refresh, dataSource } = useLeads();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -36,6 +58,7 @@ export default function SendEmailsPage() {
   const [logs, setLogs] = useState<OutreachLog[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
+  const [includeWebsiteLink, setIncludeWebsiteLink] = useState(true);
 
   const loadLogs = useCallback(async () => {
     const res = await fetch("/api/outreach-logs?limit=30", { cache: "no-store" });
@@ -125,14 +148,14 @@ export default function SendEmailsPage() {
     setResultMsg(null);
 
     try {
-      const html = plainBodyToHtml(body);
+      const { body: bodyOut, html } = appendWebsiteFooter(body, includeWebsiteLink);
       const res = await fetch("/api/send-email/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           leadIds: ids,
           subject: subject.trim(),
-          body,
+          body: bodyOut,
           html,
           allowResend,
         }),
@@ -279,6 +302,28 @@ export default function SendEmailsPage() {
               placeholder="Hi…"
             />
           </label>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={includeWebsiteLink}
+              onClick={() => setIncludeWebsiteLink((v) => !v)}
+              className={[
+                "w-fit rounded-lg border px-4 py-2.5 text-left text-sm font-medium transition-colors",
+                includeWebsiteLink
+                  ? "border-[rgba(242,92,5,0.55)] bg-[rgba(242,92,5,0.12)] text-zinc-100"
+                  : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-zinc-400 hover:text-zinc-200",
+              ].join(" ")}
+            >
+              <span className="block">{includeWebsiteLink ? "✓ Include website link at end" : "Include website link at end"}</span>
+              <span className="mt-1 block text-[11px] font-normal text-zinc-500 break-all">{OUTBOUND_WEBSITE_FOOTER_URL}</span>
+            </button>
+            <p className="text-[11px] text-zinc-600 leading-snug max-w-xl">
+              When this is on, the link above is appended after your message when you send (plaintext + HTML email).
+            </p>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
