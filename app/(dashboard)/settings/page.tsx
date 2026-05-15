@@ -79,14 +79,16 @@ export default function SettingsPage() {
     <div className="space-y-10 max-w-2xl">
       <PageHeader
         title="Settings"
-        description="Environment checklist, outbound sender identity, and backend connectivity for this workspace."
+        description="Sender address and connection status. Advanced env list is below if you need it."
       />
 
-      <DashCard className="p-6 space-y-4 text-sm">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+      <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5 text-sm">
+        <summary className="cursor-pointer list-none font-semibold text-[var(--color-heading)] flex items-center justify-between gap-2">
           Environment variables
-        </h2>
-        <ul className="space-y-2 text-[var(--color-body-muted)]">
+          <span className="text-xs font-normal text-[var(--color-muted)] group-open:hidden">Show</span>
+          <span className="hidden text-xs font-normal text-[var(--color-muted)] group-open:inline">Hide</span>
+        </summary>
+        <ul className="mt-4 space-y-2 text-[var(--color-body-muted)] border-t border-[var(--color-border-subtle)] pt-4">
           <li>
             <code className="text-zinc-300">NEXT_PUBLIC_SUPABASE_URL</code> — project URL
           </li>
@@ -113,13 +115,12 @@ export default function SettingsPage() {
             <code className="text-zinc-300">OUTBOUND_MAX_SENDS_PER_HOUR</code> — optional cap (default 100)
           </li>
         </ul>
-        <p className="text-[var(--color-body-muted)] text-xs pt-2 leading-relaxed">
+        <p className="text-[var(--color-body-muted)] text-xs mt-4 leading-relaxed">
           Copy <code className="text-[var(--color-body)]">.env.example</code> to{" "}
-          <code className="text-[var(--color-body)]">.env.local</code> and fill values. Run migrations in
-          order in the Supabase SQL editor (see repo <code className="text-[var(--color-body)]">supabase/migrations</code>
-          ).
+          <code className="text-[var(--color-body)]">.env.local</code> and fill values. Run migrations from{" "}
+          <code className="text-[var(--color-body)]">supabase/migrations</code> in the SQL editor when needed.
         </p>
-      </DashCard>
+      </details>
 
       <DashCard id="outbound-sender" className="p-6 space-y-4 text-sm">
         <div>
@@ -127,22 +128,11 @@ export default function SettingsPage() {
             Outbound sender
           </h2>
           <p className="mt-2 text-xs text-[var(--color-body-muted)] leading-relaxed">
-            Stored in Supabase <code className="text-[var(--color-body)]">inboxes</code>. The visible{" "}
-            <strong className="text-[var(--color-heading)]">From</strong> must use an address at a domain you verify in{" "}
-            <a
-              className="dash-link"
-              href="https://resend.com/domains"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <strong className="text-[var(--color-heading)]">From</strong> must be an address at a domain you verify in{" "}
+            <a className="dash-link" href="https://resend.com/domains" target="_blank" rel="noreferrer">
               Resend
-            </a>{" "}
-            (consumer mail like{" "}
-            <code className="text-[var(--color-body)]">@gmail.com</code> cannot be authenticated as From). Jake can still{" "}
-            <strong className="text-[var(--color-heading)]">receive</strong> replies in Gmail: use{" "}
-            <code className="text-[var(--color-body)]">jakemitchellselect@gmail.com</code> in{" "}
-            <strong className="text-[var(--color-heading)]">Reply-To</strong> below, while From stays something like{" "}
-            <code className="text-[var(--color-body)]">Jake Mitchell &lt;jake@select-surplus-domain.com&gt;</code>.
+            </a>
+            . Use <strong className="text-[var(--color-heading)]">Reply-To</strong> for the inbox where you actually read mail (often Gmail).
           </p>
         </div>
 
@@ -157,13 +147,12 @@ export default function SettingsPage() {
                 className="rounded-xl border border-amber-500/40 bg-amber-950/25 px-3 py-2.5 text-xs text-amber-100/95 leading-relaxed"
                 role="status"
               >
-                This From line looks like consumer mail (@gmail, @yahoo, etc.). Resend will reject sends — switch to an
-                address on{" "}
+                This From line looks like consumer mail (@gmail, @yahoo, etc.). Resend won&apos;t send from that — use an
+                address at{" "}
                 <Link href="https://resend.com/domains" className="underline underline-offset-2">
                   your verified domain
                 </Link>
-                , and put <code className="text-[11px]">jakemitchellselect@gmail.com</code> in Reply-To if Jake reads
-                mail there.
+                , and put your personal Gmail in Reply-To if you read mail there.
               </p>
             ) : null}
             <label className="flex flex-col gap-2">
@@ -213,28 +202,25 @@ export default function SettingsPage() {
         )}
       </DashCard>
 
-      <DashCard className="p-6 space-y-3 text-sm text-[var(--color-body-muted)]">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          Photo / logo next to your emails (Gmail &amp; others)
-        </h2>
-        <p className="leading-relaxed">
-          This app can&apos;t upload an “avatar image” to Resend for you — the inbox (Gmail, Outlook, etc.) decides what
-          shows. For addresses like <code className="text-[var(--color-body)]">jake@selectsurplususa.com</code>, the usual
-          free approach is{" "}
-          <a className="dash-link font-semibold" href="https://gravatar.com" target="_blank" rel="noreferrer">
-            Gravatar
-          </a>
-          : create an account with the <strong className="text-[var(--color-heading)]">exact same From email</strong> and upload Jake&apos;s photo there. Some clients show it;
-          Gmail also factors Google account history.
-        </p>
-        <p className="text-xs text-[var(--color-muted)] leading-relaxed">
-          A branded logo in the inbox list for large senders often uses{" "}
-          <a className="dash-link" href="https://bimigroup.org/" target="_blank" rel="noreferrer">
-            BIMI
-          </a>{" "}
-          (DMARC + a verified mark certificate) — heavier setup, not required for day‑one testing.
-        </p>
-      </DashCard>
+      <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5">
+        <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)] flex items-center justify-between gap-2">
+          Avatar in inbox (optional)
+          <span className="normal-case font-normal text-[var(--color-muted)] group-open:hidden text-[11px]">Show</span>
+          <span className="hidden normal-case font-normal text-[var(--color-muted)] group-open:inline text-[11px]">Hide</span>
+        </summary>
+        <div className="mt-4 space-y-3 text-sm text-[var(--color-body-muted)] border-t border-[var(--color-border-subtle)] pt-4 leading-relaxed">
+          <p>
+            Inboxes pick the portrait; this app doesn&apos;t upload one. Common free option: upload a photo to{" "}
+            <a className="dash-link font-semibold" href="https://gravatar.com" target="_blank" rel="noreferrer">
+              Gravatar
+            </a>{" "}
+            tied to your <strong className="text-[var(--color-heading)]">exact From email</strong>.
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">
+            BIMI / branded logos for large brands are heavier — skip for day-to-day.
+          </p>
+        </div>
+      </details>
 
       <DashCard className="p-6 space-y-4 text-sm">
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Backend status</h2>
@@ -253,9 +239,8 @@ export default function SettingsPage() {
             Refresh leads
           </button>
         </div>
-        <p className="text-xs text-[var(--color-muted)] leading-relaxed">
-          Production mode does not persist leads in the browser. All data lives in Supabase once the service role and
-          migrations are in place.
+        <p className="text-xs text-[var(--color-muted)]">
+          Lead data stays in Supabase when the backend is configured.
         </p>
       </DashCard>
     </div>

@@ -26,7 +26,7 @@ export default function LeadsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Leads"
-        description="Your vetted prospect list — from Lead Finder approvals, CSV import, or manual entry. Filter by pipeline and email status, then bulk-update or jump to outbound."
+        description="Prospect list. Filter, update status in bulk, or open Send email."
       >
         <AddLeadModal />
       </PageHeader>

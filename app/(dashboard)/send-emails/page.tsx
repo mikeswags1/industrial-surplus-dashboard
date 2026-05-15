@@ -182,28 +182,28 @@ export default function SendEmailsPage() {
   return (
     <div className="space-y-10 max-w-6xl">
       <PageHeader
-        title="Send emails"
-        description={(
+        title="Send email"
+        description={
           <>
-            Choose saved leads from the{" "}
+            Pick leads below, compose a message, then send.
+            {" "}
             <Link href="/leads" className="dash-link">
-              Leads
-            </Link>{" "}
-            list (valid emails only), edit the draft, then send in batches. Send history and bounce/complaint setup live on{" "}
+              Lead list
+            </Link>
+            {" · "}
             <Link href="/email-tracking" className="dash-link">
-              Email tracking
+              Activity
             </Link>
-            . Set the visible From in{" "}
+            {" · "}
             <Link href="/settings#outbound-sender" className="dash-link">
-              Settings → Outbound sender
+              Sender settings
             </Link>
-            . Duplicate sends require confirmation.
           </>
-        )}
+        }
       />
 
       {dataSource !== "remote" ? (
-        <p className="text-sm text-amber-400/95">Connect Supabase to send tracked emails.</p>
+        <p className="text-sm text-amber-400/95">Add database env vars to enable sending.</p>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -311,12 +311,12 @@ export default function SendEmailsPage() {
             </p>
           ) : null}
           {resultMsg ? <p className="text-sm text-emerald-400">{resultMsg}</p> : null}
-          <p className="text-xs text-zinc-600">
-            Needs a Resend{" "}
-            <code className="text-zinc-400">RESEND_API_KEY</code>. Your &quot;from&quot; address comes from{" "}
-            <strong className="text-zinc-500">Settings → Outbound sender</strong>, or fallback{" "}
-            <code className="text-zinc-400">RESEND_FROM_EMAIL</code>. Caps:{" "}
-            <code className="text-zinc-400">OUTBOUND_MAX_SENDS_PER_HOUR</code>.
+          <p className="text-xs text-zinc-500">
+            Mail is sent through Resend using the address in{" "}
+            <Link href="/settings#outbound-sender" className="text-zinc-400 hover:underline">
+              Settings
+            </Link>
+            .
           </p>
         </section>
       </div>

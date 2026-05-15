@@ -16,11 +16,11 @@ export function PageHeader({ title, description, children, compact }: PageHeader
       } border-b border-[var(--color-border-subtle)]`}
     >
       <div className="space-y-2 min-w-0 max-w-3xl">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--color-heading)] leading-[1.12]">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--color-heading)] leading-tight">
           {title}
         </h1>
         {description ? (
-          <div className="text-base text-[var(--color-body-muted)] leading-relaxed max-w-3xl font-medium">
+          <div className="text-sm text-[var(--color-body-muted)] leading-relaxed max-w-2xl">
             {description}
           </div>
         ) : null}

@@ -12,9 +12,8 @@ const fontDashboard = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Select Surplus LLC — Lead Finder & Outreach",
-  description:
-    "Find surplus holders, save leads, send cold emails, and track replies in one workspace.",
+  title: "Select Surplus LLC — Leads & email",
+  description: "Find companies, manage leads, and send outbound email.",
 };
 
 export default function RootLayout({

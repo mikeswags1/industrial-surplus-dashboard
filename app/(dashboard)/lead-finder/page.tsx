@@ -270,8 +270,8 @@ export default function LeadFinderPage() {
   return (
     <div className="space-y-8 w-full max-w-4xl xl:max-w-none">
       <PageHeader
-        title="Lead Finder"
-        description="Choose where to look, which industries to target, then search. We pull real businesses from Google — you approve who becomes a lead."
+        title="Find leads"
+        description="Search businesses by area and trade, then approve rows into your lead list."
       />
 
       <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] overflow-hidden">

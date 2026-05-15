@@ -109,14 +109,13 @@ export default function EmailTrackingPage() {
   return (
     <div className="space-y-10 max-w-6xl">
       <PageHeader
-        title="Email tracking"
-        description={(
+        title="Activity"
+        description={
           <>
-            Who has been emailed and when — sourced from {" "}
-            <code className="text-[var(--color-body)]">outreach_logs</code>. Bounces / complaints appear when{" "}
-            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> is set and Resend sends those events here.{" "}
+            Sends and delivery issues per lead.
+            {" "}
             <Link href="/send-emails" className="dash-link">
-              Send emails
+              Send email
             </Link>
             {" · "}
             <Link href="/leads" className="dash-link">
@@ -124,76 +123,77 @@ export default function EmailTrackingPage() {
             </Link>
             {" · "}
             <Link href="/settings#outbound-sender" className="dash-link">
-              Outbound sender
+              Sender settings
             </Link>
           </>
-        )}
+        }
       />
 
-      <DashCard className="p-6 space-y-4 text-sm text-[var(--color-body-muted)]">
-        <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          Resend + webhooks (sends &amp; delivery)
-        </h2>
-        <ol className="list-decimal space-y-2 pl-5 leading-relaxed">
-          <li>
-            Domain + <code className="text-[var(--color-body)]">RESEND_API_KEY</code> →{" "}
-            <Link href="/settings#outbound-sender" className="dash-link font-semibold">
-              Settings → Outbound sender
-            </Link>
-            .
-          </li>
-          <li>
-            Add{" "}
-            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> from Resend Webhooks → endpoint{" "}
-            <code className="text-[var(--color-body)] break-all">{siteUrlHint}</code> → subscribe{" "}
-            <code className="text-[var(--color-body)]">email.bounced</code> and{" "}
-            <code className="text-[var(--color-body)]">email.complained</code>
-            {!webhookOk ? (
-              <>
-                {" "}
-                (<span className="text-amber-400 font-semibold">secret missing</span>)
-              </>
-            ) : null}
-            .
-          </li>
-        </ol>
-        <p className="text-xs pt-1">
-          Backend:{" "}
-          <span className="text-[var(--color-heading)] font-semibold">
-            {runtime ? runtime.dataLayer : "…"}
-          </span>
-          . Webhook secret:{" "}
-          <span className={`font-semibold ${webhookOk ? "text-emerald-400" : "text-amber-400"}`}>
-            {runtime?.resendWebhook ?? "checking…"}
-          </span>
-          {webhookOk ? null : (
-            <span className="text-[var(--color-muted)]">
-              {" "}
-              — Needed for bounce/complaint rows below.
+      <details className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-body-muted)]">
+        <summary className="cursor-pointer list-none font-medium text-[var(--color-heading)] flex items-center justify-between gap-2">
+          Resend webhook setup
+          <span className="text-xs font-normal text-[var(--color-muted)] group-open:hidden">Show</span>
+          <span className="hidden text-xs font-normal text-[var(--color-muted)] group-open:inline">Hide</span>
+        </summary>
+        <div className="mt-4 space-y-3 border-t border-[var(--color-border-subtle)] pt-4 leading-relaxed">
+          <ol className="list-decimal space-y-2 pl-5">
+            <li>
+              Sending domain +{" "}
+              <code className="text-[var(--color-body)]">RESEND_API_KEY</code> — save in{" "}
+              <Link href="/settings#outbound-sender" className="dash-link font-semibold">
+                Settings → Outbound sender
+              </Link>
+              .
+            </li>
+            <li>
+              In Resend, add webhook URL{" "}
+              <code className="text-[var(--color-body)] break-all">{siteUrlHint}</code>
+              {" with "}
+              <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code>
+              {" in this app — subscribe "}
+              <code className="text-[var(--color-body)]">email.bounced</code> &amp;{" "}
+              <code className="text-[var(--color-body)]">email.complained</code>
+              {!webhookOk ? (
+                <span className="text-amber-400 font-semibold"> {" "}(secret missing)</span>
+              ) : null}
+              .
+            </li>
+          </ol>
+          <p className="text-xs">
+            Connection:{" "}
+            <span className="text-[var(--color-heading)] font-semibold">
+              {runtime ? runtime.dataLayer : "…"}
             </span>
-          )}
-        </p>
-      </DashCard>
+            . Webhook:{" "}
+            <span className={`font-semibold ${webhookOk ? "text-emerald-400" : "text-amber-400"}`}>
+              {runtime?.resendWebhook ?? "…"}
+            </span>
+            {!webhookOk ? (
+              <span className="text-[var(--color-muted)]"> — required for bounce / complaint rows below.</span>
+            ) : null}
+          </p>
+        </div>
+      </details>
 
       {dataSource !== "remote" ? (
-        <p className="text-sm text-amber-400/95">Connect Supabase to load live lead totals and send history.</p>
+        <p className="text-sm text-amber-400/95">Connect the database (Supabase env) to load leads and sends.</p>
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <DashCard className="p-5 ring-2 ring-[var(--color-accent)]/20">
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Not emailed yet</p>
           <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.neverSent}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Mailable leads with no outbound send logged.</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Valid email on file; no recorded send.</p>
         </DashCard>
         <DashCard className="p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Emailed (≥ once)</p>
           <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.emailed}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">At least one send in outreach history.</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">At least one send recorded.</p>
         </DashCard>
         <DashCard className="p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Won / not interested</p>
           <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.terminalPipeline}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Mailable leads emailed and marked terminal in pipeline.</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Emailed and marked Won or Not interested.</p>
         </DashCard>
       </div>
 
@@ -271,10 +271,7 @@ export default function EmailTrackingPage() {
             </tbody>
           </table>
           {!deliveryIssues.length ? (
-            <p className="text-[var(--color-muted)] text-sm py-6">
-              No bounce or complaint logged yet — or webhook not wired. Resend “delivered” events are not stored here unless
-              you extend the webhook handler later.
-            </p>
+            <p className="text-[var(--color-muted)] text-sm py-6">No bounce or complaint rows yet.</p>
           ) : null}
         </div>
       </section>
