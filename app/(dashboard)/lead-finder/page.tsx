@@ -87,6 +87,7 @@ export default function LeadFinderPage() {
   const [approving, setApproving] = useState<string | null>(null);
   const [addAllBusy, setAddAllBusy] = useState(false);
   const [cityMode, setCityMode] = useState<LeadFinderCityMode>("specific");
+  const [stateFilter, setStateFilter] = useState("");
   const [industryFilter, setIndustryFilter] = useState("");
 
   useEffect(() => {
