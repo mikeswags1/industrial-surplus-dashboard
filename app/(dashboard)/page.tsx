@@ -25,8 +25,8 @@ const STEPS = [
   },
   {
     n: "4",
-    title: "Watch replies",
-    body: "Sent mail, no-reply aging, and webhook-captured replies surface on Email tracking.",
+    title: "Track sends",
+    body: "See who has been emailed, recent outbound history, and delivery issues from Resend webhooks.",
     href: "/email-tracking",
     cta: "Open email tracking",
   },
@@ -87,7 +87,7 @@ export default function HomePage() {
             Email tracking
           </div>
           <p className="mt-2 text-sm font-medium text-[var(--color-body-muted)] leading-relaxed">
-            Sends, waits, replies, and how to hook up your client mailbox + Resend.
+            Outbound sends, delivery issues, and wiring Resend webhooks + your sender identity.
           </p>
           <Link
             href="/email-tracking"

@@ -69,44 +69,33 @@ export default function EmailTrackingPage() {
 
   const funnel = useMemo(() => {
     let neverSent = 0;
-    let sentAwaitingReply = 0;
-    let repliedBucket = 0;
-    let otherStatuses = 0;
+    let emailed = 0;
+    let terminalPipeline = 0;
 
     const terminal: LeadStatus[] = ["Deal Won", "Not Interested"];
 
     for (const lead of mailableLeads) {
       const hasSend = Boolean(lead.last_email_sent_at?.trim());
-      const hasReply =
-        Boolean(lead.reply_logged_at?.trim()) ||
-        lead.status === "Replied" ||
-        (lead.inbound_reply_count ?? 0) > 0;
-
-      if (hasReply) {
-        repliedBucket += 1;
-        continue;
-      }
 
       if (!hasSend) {
         neverSent += 1;
         continue;
       }
 
-      if (terminal.includes(lead.status)) {
-        otherStatuses += 1;
-        continue;
-      }
+      emailed += 1;
 
-      sentAwaitingReply += 1;
+      if (terminal.includes(lead.status)) {
+        terminalPipeline += 1;
+      }
     }
 
-    return { neverSent, sentAwaitingReply, repliedBucket, otherStatuses };
+    return { neverSent, emailed, terminalPipeline };
   }, [mailableLeads]);
 
   const recentSends = useMemo(() => logs.filter((l) => l.event_type === "send").slice(0, 35), [logs]);
 
-  const recentReplies = useMemo(
-    () => logs.filter((l) => l.event_type === "reply").slice(0, 20),
+  const deliveryIssues = useMemo(
+    () => logs.filter((l) => l.event_type === "bounce" || l.event_type === "complaint").slice(0, 25),
     [logs],
   );
 
@@ -123,15 +112,15 @@ export default function EmailTrackingPage() {
         title="Email tracking"
         description={(
           <>
-            Counts mirror your leads list plus everything logged in{" "}
-            <code className="text-[var(--color-body)]">outreach_logs</code>. Sends log automatically.{" "}
-            <strong className="text-[var(--color-heading)]">Gmail-only replies</strong> (Reply-To) do not hit Resend — use{" "}
-            <Link href="/leads" className="dash-link font-semibold">
-              Lead list → Record reply
-            </Link>{" "}
-            to sync the dashboard, or set up the webhook path below for hands‑free logging.{" "}
+            Who has been emailed and when — sourced from {" "}
+            <code className="text-[var(--color-body)]">outreach_logs</code>. Bounces / complaints appear when{" "}
+            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> is set and Resend sends those events here.{" "}
             <Link href="/send-emails" className="dash-link">
               Send emails
+            </Link>
+            {" · "}
+            <Link href="/leads" className="dash-link">
+              Lead list
             </Link>
             {" · "}
             <Link href="/settings#outbound-sender" className="dash-link">
@@ -141,71 +130,31 @@ export default function EmailTrackingPage() {
         )}
       />
 
-      <DashCard className="p-5 border-l-4 border-l-amber-500/90 bg-amber-950/20 space-y-2">
-        <p className="text-sm font-semibold text-[var(--color-heading)]">Replied in Gmail but nothing here?</p>
-        <p className="text-sm text-[var(--color-body-muted)] leading-relaxed">
-          With <strong className="text-[var(--color-heading)]">Reply-To</strong> set to Gmail, their reply never passes through Resend, so this page cannot see it until you either{" "}
-          <Link href="/leads" className="dash-link">
-            open Leads
-          </Link>
-          , select that company, and click <strong className="text-[var(--color-heading)]">Record reply</strong> (adds a reply row + bumps counts), or you later configure{" "}
-          <strong className="text-[var(--color-heading)]">Resend Receiving</strong> on your domain +{" "}
-          <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code>.
-        </p>
-      </DashCard>
-
       <DashCard className="p-6 space-y-4 text-sm text-[var(--color-body-muted)]">
         <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">
-          Link your client&apos;s outbound email &amp; track replies
+          Resend + webhooks (sends &amp; delivery)
         </h2>
         <ol className="list-decimal space-y-2 pl-5 leading-relaxed">
           <li>
-            In{" "}
-            <a className="dash-link" href="https://resend.com/domains" target="_blank" rel="noreferrer">
-              Resend → Domains
-            </a>
-            , add and verify DNS for the domain you&apos;ll send from (
-            <code className="text-[var(--color-body)]">SPF/DKIM</code> complete).
-          </li>
-          <li>
-            In this app →{" "}
+            Domain + <code className="text-[var(--color-body)]">RESEND_API_KEY</code> →{" "}
             <Link href="/settings#outbound-sender" className="dash-link font-semibold">
               Settings → Outbound sender
             </Link>
-            , save the <strong className="text-[var(--color-heading)]">From</strong> address on that verified domain — e.g.{" "}
-            <code className="text-[var(--color-body)]">Jake Mitchell &lt;jake@your-business-domain.com&gt;</code>.
-            Gmail addresses like{" "}
-            <code className="text-[var(--color-body)]">jakemitchellselect@gmail.com</code> cannot be the authenticated
-            From with Resend. You may put Gmail in Reply-To so Jake reads replies there — note that replies then bypass
-            Resend, so you won&apos;t get automatic webhook &quot;replied&quot; rows unless leads reply to your verified-domain
-            address instead.
+            .
           </li>
           <li>
-            In Vercel (or hosting), set{" "}
-            <code className="text-[var(--color-body)]">RESEND_API_KEY</code> (required). For automatic reply logging,
-            set <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> too.
-          </li>
-          <li>
-            In Resend → Webhooks → add endpoint URL{" "}
-            <code className="text-[var(--color-body)] break-all">{siteUrlHint}</code> and subscribe at least to{" "}
-            <code className="text-[var(--color-body)]">email.received</code>,{" "}
-            <code className="text-[var(--color-body)]">email.bounced</code>, and{" "}
-            <code className="text-[var(--color-body)]">email.complained</code>. Paste the Svix signing secret into{" "}
-            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code>.
-          </li>
-          <li>
-            For <strong className="text-[var(--color-heading)]">inbound replies</strong> (so Prospects emailing you back hit
-            this webhook), configure Resend{" "}
-            <a
-              className="dash-link"
-              href="https://resend.com/docs/dashboard/receiving/introduction"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Receiving
-            </a>{" "}
-            (MX/subdomain forwarding) so messages to your sending alias are handled by Resend and forwarded to your
-            endpoint.
+            Add{" "}
+            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> from Resend Webhooks → endpoint{" "}
+            <code className="text-[var(--color-body)] break-all">{siteUrlHint}</code> → subscribe{" "}
+            <code className="text-[var(--color-body)]">email.bounced</code> and{" "}
+            <code className="text-[var(--color-body)]">email.complained</code>
+            {!webhookOk ? (
+              <>
+                {" "}
+                (<span className="text-amber-400 font-semibold">secret missing</span>)
+              </>
+            ) : null}
+            .
           </li>
         </ol>
         <p className="text-xs pt-1">
@@ -213,45 +162,38 @@ export default function EmailTrackingPage() {
           <span className="text-[var(--color-heading)] font-semibold">
             {runtime ? runtime.dataLayer : "…"}
           </span>
-          . Webhook signing secret configured:{" "}
+          . Webhook secret:{" "}
           <span className={`font-semibold ${webhookOk ? "text-emerald-400" : "text-amber-400"}`}>
             {runtime?.resendWebhook ?? "checking…"}
           </span>
           {webhookOk ? null : (
             <span className="text-[var(--color-muted)]">
               {" "}
-              — Reply logging needs Resend inbound + webhook configured.
+              — Needed for bounce/complaint rows below.
             </span>
           )}
         </p>
       </DashCard>
 
       {dataSource !== "remote" ? (
-        <p className="text-sm text-amber-400/95">Connect Supabase to load live lead totals and inbox history.</p>
+        <p className="text-sm text-amber-400/95">Connect Supabase to load live lead totals and send history.</p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <DashCard className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Haven&apos;t emailed</p>
-          <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.neverSent}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Leads with a valid email, no send logged.</p>
-        </DashCard>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <DashCard className="p-5 ring-2 ring-[var(--color-accent)]/20">
-          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Emailed, no reply yet</p>
-          <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.sentAwaitingReply}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Includes pending &quot;No response&quot; aging on the leads list.</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Not emailed yet</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.neverSent}</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Mailable leads with no outbound send logged.</p>
         </DashCard>
         <DashCard className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Replied</p>
-          <p className="mt-2 text-3xl font-bold tabular-nums text-emerald-400">{funnel.repliedBucket}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Matched webhook or logged reply timestamps.</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Emailed (≥ once)</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.emailed}</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">At least one send in outreach history.</p>
         </DashCard>
         <DashCard className="p-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Terminal pipeline</p>
-          <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.otherStatuses}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">
-            Emailed but status is Won / Not interested (excluding simple reply bucket).
-          </p>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Won / not interested</p>
+          <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.terminalPipeline}</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Mailable leads emailed and marked terminal in pipeline.</p>
         </DashCard>
       </div>
 
@@ -300,9 +242,9 @@ export default function EmailTrackingPage() {
 
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h2 className="text-sm font-medium text-[var(--color-heading)]">New replies (logged)</h2>
+          <h2 className="text-sm font-medium text-[var(--color-heading)]">Delivery issues (bounce / complaint)</h2>
           {!webhookOk ? (
-            <span className="text-xs font-semibold text-amber-500">Configure webhook to populate</span>
+            <span className="text-xs font-semibold text-amber-500">Set webhook secret to capture</span>
           ) : null}
         </div>
         <div className="overflow-x-auto text-sm">
@@ -310,36 +252,28 @@ export default function EmailTrackingPage() {
             <thead className="text-xs uppercase text-[var(--color-muted)] border-b border-[var(--color-border)]">
               <tr>
                 <th className="pb-2 pr-3 font-medium">When</th>
-                <th className="pb-2 pr-3 font-medium">From prospect</th>
-                <th className="pb-2 pr-3 font-medium">Captured as</th>
-                <th className="pb-2 font-medium">Subject / snippet</th>
+                <th className="pb-2 pr-3 font-medium">Type</th>
+                <th className="pb-2 font-medium">To / detail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
-              {recentReplies.map((row) => (
+              {deliveryIssues.map((row) => (
                 <tr key={row.id} className="text-[var(--color-body-muted)]">
                   <td className="py-2 pr-3 whitespace-nowrap text-xs">
                     {new Date(row.created_at).toLocaleString()}
                   </td>
-                  <td className="py-2 pr-3">{row.from_email ?? row.to_email ?? "—"}</td>
-                  <td className="py-2 pr-3 text-xs">
-                    {row.lead_id ? (
-                      <Link href="/leads" className="dash-link">
-                        Matched lead
-                      </Link>
-                    ) : (
-                      <span className="text-amber-500/90">Unmatched sender</span>
-                    )}
+                  <td className="py-2 pr-3 font-medium text-rose-400/95">{row.event_type}</td>
+                  <td className="py-2 max-w-[440px] truncate">
+                    {row.to_email ?? "—"} · {row.subject ?? row.body_preview ?? "—"}
                   </td>
-                  <td className="py-2 max-w-[340px] truncate">{row.subject ?? row.body_preview ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {!recentReplies.length ? (
+          {!deliveryIssues.length ? (
             <p className="text-[var(--color-muted)] text-sm py-6">
-              No webhook replies logged yet — they appear here once Resend inbound delivers and signs an{" "}
-              <code className="text-[var(--color-body)]">email.received</code> event.
+              No bounce or complaint logged yet — or webhook not wired. Resend “delivered” events are not stored here unless
+              you extend the webhook handler later.
             </p>
           ) : null}
         </div>

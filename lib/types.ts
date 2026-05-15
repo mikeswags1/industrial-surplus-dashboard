@@ -22,7 +22,6 @@ export const EQUIPMENT_TYPES = [
 export const LEAD_STATUSES = [
   "New",
   "Contacted",
-  "Replied",
   "Interested",
   "Quote Needed",
   "Deal Won",
@@ -72,9 +71,7 @@ export type Lead = {
   likely_asset_types?: string[];
   /** Enriched by GET /api/leads from `outreach_logs` */
   last_email_sent_at?: string | null;
-  reply_logged_at?: string | null;
   email_send_count?: number;
-  inbound_reply_count?: number;
   email_status_label?: string;
 };
 

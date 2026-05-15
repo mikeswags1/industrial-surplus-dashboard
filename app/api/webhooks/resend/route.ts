@@ -21,7 +21,7 @@ export const runtime = "nodejs";
 
 /**
  * Resend webhook (Svix-signed). Configure in Resend dashboard with signing secret → RESEND_WEBHOOK_SECRET.
- * Events: `email.received` (inbound reply), `email.bounced`, `email.complained`.
+ * Events: `email.received` (optional inbound audit — not surfaced in dashboard UI), `email.bounced`, `email.complained`.
  */
 export async function POST(request: Request) {
   const secret = getResendWebhookSecret();

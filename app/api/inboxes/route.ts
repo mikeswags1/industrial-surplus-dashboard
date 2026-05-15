@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           error:
-            "Resend cannot send “from” consumer addresses like @gmail.com. Add a domain you control in Resend, set From to e.g. “Jake Mitchell <jake@yourdomain.com>”. If you use @gmail.com in Reply-To only, replies hit Gmail but bypass Resend webhooks — for automatic reply tracking, configure Receiving on your domain and avoid routing replies only to Gmail.",
+            "Resend cannot send “from” consumer addresses like @gmail.com. Add a domain you control in Resend, set From to e.g. “Jake Mitchell <jake@yourdomain.com>”. You can still put Gmail (or any inbox) in Reply-To for where you read mail.",
         },
         { status: 400 }
       );

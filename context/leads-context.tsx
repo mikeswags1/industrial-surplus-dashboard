@@ -21,7 +21,6 @@ type LeadsContextValue = {
   addLead: (input: Omit<Lead, "id" | "created_at" | "updated_at">) => Promise<void>;
   updateLead: (id: string, patch: Partial<Lead>) => Promise<void>;
   bulkSetStatus: (ids: string[], status: LeadStatus) => Promise<void>;
-  bulkMarkReplied: (ids: string[]) => Promise<void>;
   refresh: () => Promise<void>;
   importFromCsvText: (
     csvText: string,
@@ -134,26 +133,6 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     [dataSource, refresh]
   );
 
-  const bulkMarkReplied = useCallback(
-    async (ids: string[]) => {
-      if (dataSource !== "remote") {
-        throw new Error("Cannot update leads until the database API is available.");
-      }
-      if (!ids.length) return;
-      const res = await fetch("/api/leads/bulk-replied", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids }),
-      });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string }).error ?? "Bulk mark replied failed");
-      }
-      await refresh();
-    },
-    [dataSource, refresh]
-  );
-
   const importFromCsvText = useCallback(
     async (csvText: string, tag?: string) => {
       if (dataSource !== "remote") {
@@ -199,7 +178,6 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       addLead,
       updateLead,
       bulkSetStatus,
-      bulkMarkReplied,
       refresh,
       importFromCsvText,
       enrichLead,
@@ -211,7 +189,6 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       addLead,
       updateLead,
       bulkSetStatus,
-      bulkMarkReplied,
       refresh,
       importFromCsvText,
       enrichLead,
@@ -236,7 +213,7 @@ export function countByStatus(leads: Lead[], status: LeadStatus) {
 export function pipelineValue(leads: Lead[]) {
   return leads
     .filter((l) =>
-      ["New", "Contacted", "Replied", "Interested", "Quote Needed"].includes(
+      ["New", "Contacted", "Interested", "Quote Needed"].includes(
         l.status
       )
     )

@@ -40,31 +40,23 @@ export async function queryExistingDedupeKeys(
 
 type LogRow = { lead_id: string | null; event_type: string; created_at: string };
 
-type LeadOutreachAgg = {
+type LeadSendAgg = {
   lastSend: string | null;
-  lastReply: string | null;
   sendCount: number;
-  replyCount: number;
 };
 
-function aggregateOutreachByLeadId(logs: LogRow[]) {
-  const map = new Map<string, LeadOutreachAgg>();
+function aggregateSendsByLeadId(logs: LogRow[]) {
+  const map = new Map<string, LeadSendAgg>();
   for (const row of logs) {
     const id = row.lead_id;
-    if (!id) continue;
+    if (!id || row.event_type !== "send") continue;
     let e = map.get(id);
     if (!e) {
-      e = { lastSend: null, lastReply: null, sendCount: 0, replyCount: 0 };
+      e = { lastSend: null, sendCount: 0 };
       map.set(id, e);
     }
-    if (row.event_type === "send") {
-      e.sendCount += 1;
-      if (!e.lastSend || row.created_at > e.lastSend) e.lastSend = row.created_at;
-    }
-    if (row.event_type === "reply") {
-      e.replyCount += 1;
-      if (!e.lastReply || row.created_at > e.lastReply) e.lastReply = row.created_at;
-    }
+    e.sendCount += 1;
+    if (!e.lastSend || row.created_at > e.lastSend) e.lastSend = row.created_at;
   }
   return map;
 }
@@ -90,23 +82,19 @@ export async function fetchLeads(
     .from("outreach_logs")
     .select("lead_id, event_type, created_at")
     .in("lead_id", ids)
-    .in("event_type", ["send", "reply"]);
+    .eq("event_type", "send");
   if (logErr) throw new Error(logErr.message);
 
-  const agg = aggregateOutreachByLeadId((logs ?? []) as LogRow[]);
+  const agg = aggregateSendsByLeadId((logs ?? []) as LogRow[]);
   return base.map((lead) => {
     const o = agg.get(lead.id) ?? {
       lastSend: null,
-      lastReply: null,
       sendCount: 0,
-      replyCount: 0,
     };
     return attachOutreachToLead(
       lead,
       o.lastSend,
-      o.lastReply,
-      o.sendCount,
-      o.replyCount
+      o.sendCount
     );
   });
 }
@@ -197,21 +185,6 @@ export async function countSendEventsForLead(
   return count ?? 0;
 }
 
-export async function insertManualReplyLog(
-  admin: SupabaseClient,
-  leadId: string,
-  snippet?: string
-): Promise<void> {
-  const { error } = await admin.from("outreach_logs").insert({
-    event_type: "reply",
-    provider: "dashboard",
-    lead_id: leadId,
-    subject: "Marked as replied",
-    body_preview: (snippet ?? "Manual reply mark from dashboard").slice(0, 240),
-    meta: { source: "dashboard_manual" },
-  });
-  if (error) throw new Error(error.message);
-}
 
 export async function findLeadByEmailCaseInsensitive(
   admin: SupabaseClient,
@@ -244,7 +217,7 @@ export async function outreachLogExistsWithProviderMessageId(
   return Boolean(data);
 }
 
-/** Inbound email (e.g. Resend `email.received`): logs reply, optional inbound_replies row, sets status Replied when matched. */
+/** Inbound email (Resend `email.received`): audit log only — lead status is unchanged (replies live in Gmail). */
 export async function recordInboundReplyFromProvider(
   admin: SupabaseClient,
   args: {
@@ -273,7 +246,7 @@ export async function recordInboundReplyFromProvider(
       from_email: args.fromEmail.trim().toLowerCase(),
       to_email: args.toEmails[0]?.trim().toLowerCase() ?? null,
       subject,
-      body_preview: preview || "Inbound reply (webhook)",
+      body_preview: preview || "Inbound (webhook audit)",
       lead_id: lead?.id ?? null,
       meta: {
         source: "resend_webhook",
@@ -294,12 +267,7 @@ export async function recordInboundReplyFromProvider(
       raw_headers: args.rawPayload,
     });
     if (irErr) {
-      // Optional audit row; outreach_logs still records the reply.
-    }
-
-    const terminal: LeadStatus[] = ["Deal Won", "Not Interested"];
-    if (!terminal.includes(lead.status)) {
-      await updateLeadRow(admin, lead.id, { status: "Replied" });
+      // Optional audit row for provider inbound mail; UI stays outbound-focused.
     }
   }
 

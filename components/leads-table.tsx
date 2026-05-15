@@ -8,10 +8,8 @@ import { useLeads } from "@/context/leads-context";
 
 const EMAIL_STATUS_FILTERS = [
   "All",
-  "No Email Sent",
-  "Email Sent",
-  "No Response",
-  "Replied",
+  "No email sent",
+  "Email sent",
   "Interested",
   "Deal Won",
   "Not Interested",
@@ -19,8 +17,16 @@ const EMAIL_STATUS_FILTERS = [
 
 function matchesEmailFilter(label: string | undefined, filter: string) {
   if (filter === "All") return true;
-  const L = label ?? "No Email Sent";
-  if (filter === "No Response") return L.startsWith("No Response");
+  const L = label ?? "No email sent";
+  if (
+    filter === "Interested" ||
+    filter === "Deal Won" ||
+    filter === "Not Interested"
+  ) {
+    return L === filter;
+  }
+  if (filter === "No email sent") return L === "No email sent";
+  if (filter === "Email sent") return L === "Email sent";
   return L === filter;
 }
 
@@ -41,7 +47,6 @@ export function LeadsTable() {
     leads,
     updateLead,
     bulkSetStatus,
-    bulkMarkReplied,
     dataSource,
     enrichLead,
   } = useLeads();
@@ -199,17 +204,6 @@ export function LeadsTable() {
             </span>
             <button
               type="button"
-              className="rounded-lg border border-emerald-800/45 bg-emerald-950/35 px-3 py-1.5 text-emerald-200 text-xs font-medium hover:bg-emerald-950/50 transition-colors"
-              onClick={() =>
-                void bulkMarkReplied(selectedIds).then(clearSelection).catch((e) =>
-                  alert(e instanceof Error ? e.message : "Failed")
-                )
-              }
-            >
-              Record reply
-            </button>
-            <button
-              type="button"
               className="rounded-lg border border-amber-800/40 bg-amber-950/30 px-3 py-1.5 text-amber-100 text-xs font-medium hover:bg-amber-950/45 transition-colors"
               onClick={() =>
                 void bulkSetStatus(selectedIds, "Interested")
@@ -235,7 +229,7 @@ export function LeadsTable() {
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)]">
-        <table className="min-w-[1200px] w-full text-left text-sm">
+        <table className="min-w-[1080px] w-full text-left text-sm">
           <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40 text-[11px] uppercase tracking-[0.08em] text-[var(--color-muted)]">
             <tr>
               <th className="px-2 py-3 w-10 font-medium">
@@ -248,7 +242,6 @@ export function LeadsTable() {
               <th className="px-3 py-3 font-medium max-w-[9rem]">Likely assets</th>
               <th className="px-3 py-3 font-medium">Email status</th>
               <th className="px-3 py-3 font-medium">Last sent</th>
-              <th className="px-3 py-3 font-medium">Reply</th>
               <th className="px-3 py-3 font-medium max-w-[8rem]">Pipeline</th>
               <th className="px-3 py-3 font-medium w-20">Notes</th>
             </tr>
@@ -297,28 +290,26 @@ export function LeadsTable() {
                 <td className="px-3 py-3 text-xs whitespace-nowrap">
                   <span
                     className={
-                      l.email_status_label?.startsWith("No Response")
-                        ? "text-amber-400"
-                        : l.email_status_label === "Replied" || l.email_status_label === "Interested"
+                      l.email_status_label === "Interested" ||
+                      l.email_status_label === "Deal Won" ||
+                      l.email_status_label === "Not Interested"
+                        ? l.email_status_label === "Deal Won"
                           ? "text-emerald-400"
-                          : l.email_status_label === "Email Sent"
-                            ? "text-sky-400"
+                          : l.email_status_label === "Interested"
+                            ? "text-emerald-400"
                             : "text-zinc-400"
+                        : l.email_status_label === "Email sent"
+                          ? "text-sky-400"
+                          : "text-zinc-400"
                     }
                   >
-                    {l.email_status_label ?? "No Email Sent"}
+                    {l.email_status_label ?? "No email sent"}
                   </span>
                 </td>
                 <td className="px-3 py-3 text-xs whitespace-nowrap tabular-nums">
                   <span>{formatShortDate(l.last_email_sent_at)}</span>
                   {(l.email_send_count ?? 0) > 1 ? (
                     <span className="ml-1 text-zinc-500">×{l.email_send_count}</span>
-                  ) : null}
-                </td>
-                <td className="px-3 py-3 text-xs whitespace-nowrap tabular-nums">
-                  <span>{formatShortDate(l.reply_logged_at)}</span>
-                  {(l.inbound_reply_count ?? 0) > 1 ? (
-                    <span className="ml-1 text-zinc-500">×{l.inbound_reply_count}</span>
                   ) : null}
                 </td>
                 <td className="px-3 py-3">

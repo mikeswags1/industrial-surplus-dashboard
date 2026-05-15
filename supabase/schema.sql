@@ -25,7 +25,6 @@ create table if not exists public.leads (
     status in (
       'New',
       'Contacted',
-      'Replied',
       'Interested',
       'Quote Needed',
       'Deal Won',

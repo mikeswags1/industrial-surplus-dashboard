@@ -40,7 +40,9 @@ export default function SendEmailsPage() {
   const loadLogs = useCallback(async () => {
     const res = await fetch("/api/outreach-logs?limit=30", { cache: "no-store" });
     const json = (await res.json()) as { logs?: OutreachLog[] };
-    setLogs(Array.isArray(json.logs) ? json.logs : []);
+    const rows = Array.isArray(json.logs) ? json.logs : [];
+    // Outbound-focused UI: hide optional inbound audit rows from the dashboard.
+    setLogs(rows.filter((l) => l.event_type !== "reply"));
   }, []);
 
   useEffect(() => {
@@ -187,7 +189,7 @@ export default function SendEmailsPage() {
             <Link href="/leads" className="dash-link">
               Leads
             </Link>{" "}
-            list (valid emails only), edit the draft, then send in batches. Detailed activity and reply setup live on{" "}
+            list (valid emails only), edit the draft, then send in batches. Send history and bounce/complaint setup live on{" "}
             <Link href="/email-tracking" className="dash-link">
               Email tracking
             </Link>
@@ -321,7 +323,7 @@ export default function SendEmailsPage() {
 
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h2 className="text-sm font-medium text-zinc-300">Recent email activity</h2>
+          <h2 className="text-sm font-medium text-zinc-300">Recent outbound &amp; delivery events</h2>
           <button
             type="button"
             className="text-xs text-[var(--color-accent)] hover:underline"
@@ -354,7 +356,7 @@ export default function SendEmailsPage() {
             </tbody>
           </table>
           {!logs.length ? (
-            <p className="text-zinc-500 text-sm py-4">No sends logged yet.</p>
+            <p className="text-zinc-500 text-sm py-4">No outbound or delivery events logged yet.</p>
           ) : null}
         </div>
       </section>

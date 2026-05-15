@@ -190,9 +190,8 @@ export default function SettingsPage() {
             <label className="flex flex-col gap-2">
               <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">Reply-To (optional)</span>
               <span className="text-[11px] text-[var(--color-muted)] leading-snug">
-                If prospects reply to Gmail here, replies never pass through Resend, so automatic &quot;replied&quot; tracking from
-                the webhook will not fire. For hands-off dashboard tracking, use Receiving on your verified domain instead
-                and keep Reply-To on that domain (or leave Reply-To blank).
+                Optional. This app records outbound sends and delivery signals from Resend — not your inbound mailbox. Use
+                Reply-To for whatever address you actually read (often Gmail).
               </span>
               <input
                 className="dash-input font-mono text-[13px]"

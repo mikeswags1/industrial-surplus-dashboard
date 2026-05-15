@@ -5,8 +5,9 @@ import type { LeadRow } from "@/lib/database/types";
 export type { LeadRow } from "@/lib/database/types";
 
 function coerceStatus(s: string): LeadStatus {
-  return (LEAD_STATUSES as readonly string[]).includes(s)
-    ? (s as LeadStatus)
+  const raw = s === "Replied" ? "Contacted" : s;
+  return (LEAD_STATUSES as readonly string[]).includes(raw)
+    ? (raw as LeadStatus)
     : "New";
 }
 
