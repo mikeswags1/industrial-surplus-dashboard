@@ -9,9 +9,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  async redirects() {
-    return [{ source: "/email", destination: "/send-emails", permanent: false }];
-  },
 };
 
 export default nextConfig;

@@ -8,13 +8,14 @@
   --color-surface-2: #15181f;
   --color-surface-3: #1c2029;
   --color-surface-elevated: #12151c;
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-subtle: rgba(255, 255, 255, 0.05);
-  --color-accent: #d4692a;
-  --color-accent-hover: #e8884a;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  /* Select Surplus LLC site orange */
+  --color-accent: #f25c05;
+  --color-accent-hover: #ff7124;
   /* legacy alias used across dashboard components */
-  --color-accent-muted: #e8884a;
-  --color-accent-dim: rgba(212, 105, 42, 0.14);
+  --color-accent-muted: #ff8f4d;
+  --color-accent-dim: rgba(242, 92, 5, 0.18);
   --color-muted: #7c8494;
   --color-heading: #f4f4f5;
   --color-body: #d4d4d8;
@@ -36,7 +37,7 @@ body {
   background-color: var(--color-surface-0);
   background-image: radial-gradient(
       ellipse 100% 80% at 50% -30%,
-      rgba(212, 105, 42, 0.09),
+      rgba(242, 92, 5, 0.11),
       transparent 55%
     ),
     radial-gradient(ellipse 60% 40% at 100% 0%, rgba(88, 99, 120, 0.06), transparent 50%);
@@ -44,7 +45,7 @@ body {
 }
 
 ::selection {
-  background: rgba(212, 105, 42, 0.28);
+  background: rgba(242, 92, 5, 0.32);
   color: var(--color-heading);
 }
 
@@ -52,48 +53,54 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
+  border-radius: 0.4375rem;
+  padding: 0.8125rem 1.375rem;
+  font-size: 1rem;
   line-height: 1.25rem;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   color: #fff;
-  transition-property: color, background-color, filter;
+  transition-property: color, background-color, filter, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
   background: linear-gradient(180deg, var(--color-accent-hover) 0%, var(--color-accent) 100%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 4px 16px -4px rgba(212, 105, 42, 0.45);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.14) inset, 0 4px 22px -4px rgba(242, 92, 5, 0.55),
+    0 0 0 1px rgba(0, 0, 0, 0.12) inset;
 }
-.dash-btn-primary:hover {
-  filter: brightness(1.06);
+.dash-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
 }
 .dash-btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   filter: none;
+  transform: none;
 }
 
 .dash-btn-secondary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem;
+  border-radius: 0.4375rem;
   border-style: solid;
   border-width: 1px;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
+  padding: 0.75rem 1.125rem;
+  font-size: 0.9375rem;
   line-height: 1.25rem;
-  font-weight: 500;
-  transition-property: color, background-color;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  transition-property: color, background-color, border-color;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
-  border-color: var(--color-border);
-  background: var(--color-surface-2);
-  color: var(--color-body);
+  border-color: rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: var(--color-heading);
 }
 .dash-btn-secondary:hover {
-  background: var(--color-surface-3);
-  color: var(--color-heading);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
 }
 
 .dash-link {
@@ -129,8 +136,8 @@ body {
 }
 .dash-input:focus {
   outline: none;
-  border-color: rgba(212, 105, 42, 0.4);
-  box-shadow: 0 0 0 2px rgba(212, 105, 42, 0.22);
+  border-color: rgba(242, 92, 5, 0.55);
+  box-shadow: 0 0 0 2px rgba(242, 92, 5, 0.22);
 }
 .dash-input::placeholder {
   color: var(--color-muted);
