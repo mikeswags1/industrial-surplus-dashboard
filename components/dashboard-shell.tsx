@@ -19,15 +19,14 @@ const NAV_GROUPS: { label: string; items: { href: string; label: string }[] }[] 
       { href: "/lead-finder", label: "Find leads" },
       { href: "/leads", label: "Lead list" },
       { href: "/send-emails", label: "Send emails" },
+      { href: "/email-tracking", label: "Email tracking" },
     ],
   },
   {
     label: "Outreach",
     items: [
-      { href: "/campaigns", label: "Campaigns" },
       { href: "/email", label: "Email copy" },
       { href: "/ads", label: "Ads" },
-      { href: "/analytics", label: "Analytics" },
     ],
   },
   {

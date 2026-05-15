@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { DashCard } from "@/components/dash-card";
 import { PageHeader } from "@/components/page-header";
-import { useCampaigns } from "@/context/campaigns-context";
 import { useLeads } from "@/context/leads-context";
 
 function modeLabel(m: string) {
@@ -17,8 +16,6 @@ function modeLabel(m: string) {
 export default function SettingsPage() {
   const { dataSource: leadsMode, backendMessage: leadsErr, refresh: refreshLeads } =
     useLeads();
-  const { dataSource: campMode, backendMessage: campErr, refresh: refreshCamp } =
-    useCampaigns();
 
   const [inboxDisplay, setInboxDisplay] = useState("");
   const [inboxFrom, setInboxFrom] = useState("");
@@ -95,7 +92,7 @@ export default function SettingsPage() {
           </li>
           <li>
             <code className="text-zinc-300">SUPABASE_SERVICE_ROLE_KEY</code> —{" "}
-            <span className="text-zinc-500">server only</span>; powers API routes for leads/campaigns/import
+            <span className="text-zinc-500">server only</span>; powers API routes for leads/import/outreach logs
           </li>
           <li>
             <code className="text-zinc-300">OPENAI_API_KEY</code> — AI email / ad copy
@@ -199,12 +196,6 @@ export default function SettingsPage() {
             <span className="block mt-1 text-xs text-[var(--color-muted)]">{leadsErr}</span>
           ) : null}
         </p>
-        <p className="text-[var(--color-body-muted)]">
-          Campaigns API: <span className="text-[var(--color-heading)]">{modeLabel(campMode)}</span>
-          {campErr && campMode !== "remote" ? (
-            <span className="block mt-1 text-xs text-[var(--color-muted)]">{campErr}</span>
-          ) : null}
-        </p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -213,17 +204,10 @@ export default function SettingsPage() {
           >
             Refresh leads
           </button>
-          <button
-            type="button"
-            onClick={() => void refreshCamp()}
-            className="dash-btn-secondary"
-          >
-            Refresh campaigns
-          </button>
         </div>
         <p className="text-xs text-[var(--color-muted)] leading-relaxed">
-          Production mode does not persist leads or campaigns in the browser. All data lives in Supabase
-          once the service role and migrations are in place.
+          Production mode does not persist leads in the browser. All data lives in Supabase once the service role and
+          migrations are in place.
         </p>
       </DashCard>
     </div>

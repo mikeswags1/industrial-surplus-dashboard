@@ -12,6 +12,7 @@ type OutreachLog = {
   event_type: string;
   subject: string | null;
   to_email: string | null;
+  from_email: string | null;
   created_at: string;
   body_preview: string | null;
 };
@@ -173,11 +174,11 @@ export default function SendEmailsPage() {
             <Link href="/leads" className="dash-link">
               Leads
             </Link>{" "}
-            list (valid emails only), edit the draft, then send in batches. Sends and manual reply marks
-            go to <code className="text-[var(--color-body)]">outreach_logs</code>. Add a Resend webhook at{" "}
-            <code className="text-[var(--color-body)]">/api/webhooks/resend</code> with{" "}
-            <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code> for inbound detection.
-            Set the visible From in{" "}
+            list (valid emails only), edit the draft, then send in batches. Detailed activity and reply setup live on{" "}
+            <Link href="/email-tracking" className="dash-link">
+              Email tracking
+            </Link>
+            . Set the visible From in{" "}
             <Link href="/settings#outbound-sender" className="dash-link">
               Settings → Outbound sender
             </Link>

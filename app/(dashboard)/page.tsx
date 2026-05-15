@@ -26,9 +26,9 @@ const STEPS = [
   {
     n: "4",
     title: "Watch replies",
-    body: "Sent, failed, and replies show on your lead list when webhooks are set up.",
-    href: "/leads",
-    cta: "Open lead list",
+    body: "Sent mail, no-reply aging, and webhook-captured replies surface on Email tracking.",
+    href: "/email-tracking",
+    cta: "Open email tracking",
   },
 ] as const;
 
@@ -81,16 +81,19 @@ export default function HomePage() {
         </ol>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         <DashCard className="p-5 sm:p-6">
           <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
-            Campaigns
+            Email tracking
           </div>
           <p className="mt-2 text-sm font-medium text-[var(--color-body-muted)] leading-relaxed">
-            Scheduled follow-ups and batch sends.
+            Sends, waits, replies, and how to hook up your client mailbox + Resend.
           </p>
-          <Link href="/campaigns" className="dash-btn-primary mt-5 w-full justify-center sm:w-auto inline-flex">
-            Campaigns
+          <Link
+            href="/email-tracking"
+            className="dash-btn-primary mt-5 w-full justify-center sm:w-auto inline-flex"
+          >
+            Email tracking
           </Link>
         </DashCard>
         <DashCard className="p-5 sm:p-6">
@@ -108,17 +111,6 @@ export default function HomePage() {
               Ads
             </Link>
           </div>
-        </DashCard>
-        <DashCard className="p-5 sm:p-6">
-          <div className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">
-            Analytics
-          </div>
-          <p className="mt-2 text-sm font-medium text-[var(--color-body-muted)] leading-relaxed">
-            Sends and replies as your history grows.
-          </p>
-          <Link href="/analytics" className="dash-btn-primary mt-5 w-full justify-center sm:w-auto inline-flex">
-            Analytics
-          </Link>
         </DashCard>
       </section>
     </div>
