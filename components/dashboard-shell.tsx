@@ -83,11 +83,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="shrink-0 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-4 py-3 sm:px-6 lg:px-10">
           <p className="text-sm text-[var(--color-body-muted)]">
-            Manage your lead list and outbound email.
+            {pathname === "/"
+              ? "Choose a step below — or jump anywhere from the menu on the left."
+              : "Manage your lead list and outbound email."}
           </p>
         </header>
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-          <div className="mx-auto max-w-[1100px] w-full">{children}</div>
+          <div className="mx-auto max-w-[1280px] w-full">{children}</div>
         </main>
       </div>
     </div>

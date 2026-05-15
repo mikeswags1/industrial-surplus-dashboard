@@ -2,120 +2,98 @@ import Link from "next/link";
 
 const FIRST_NAME = "Jake";
 
-const HOW_TO_STEPS = [
+const STEPS = [
   {
     n: 1,
     title: "Find leads",
-    body: "Pick state, city, and industries, then search. You’ll get real businesses — approve the ones you want to keep.",
+    body: "Search by area and industry, then approve companies you want in your list.",
     href: "/lead-finder",
-    cta: "Open Find leads",
+    cta: "Find leads",
   },
   {
     n: 2,
     title: "Lead list",
-    body: "Every approved company shows up here. Add notes, fix pipeline status, or delete rows you don’t need.",
+    body: "Review saved prospects, update status, notes, or remove rows you don’t need.",
     href: "/leads",
-    cta: "Open Lead list",
+    cta: "Open list",
   },
   {
     n: 3,
     title: "Send email",
-    body: "Select people with valid emails, edit the message (or generate a draft), then send. Replies go to your Gmail — not this app.",
+    body: "Pick recipients, write or generate a message, send. Replies stay in your Gmail.",
     href: "/send-emails",
-    cta: "Open Send email",
+    cta: "Send email",
   },
   {
     n: 4,
     title: "Sent mail",
-    body: "See who’s been emailed from this tool and any bounces. For conversations, use your inbox.",
+    body: "See who was emailed from here and any delivery issues (bounces, complaints).",
     href: "/email-tracking",
-    cta: "Open Sent mail",
+    cta: "View log",
   },
   {
     n: 5,
     title: "Settings",
-    body: "Set the name and address mail is sent from (your business domain) and where replies should go (often your Gmail).",
+    body: "Set your From domain (verified in Resend) and Reply-To where you read mail.",
     href: "/settings",
-    cta: "Open Settings",
+    cta: "Settings",
   },
-] as const;
-
-const QUICK_LINKS = [
-  { href: "/lead-finder", label: "Find leads" },
-  { href: "/leads", label: "Lead list" },
-  { href: "/send-emails", label: "Send email" },
-  { href: "/email-tracking", label: "Sent mail" },
-  { href: "/settings", label: "Settings" },
 ] as const;
 
 export default function HomePage() {
   return (
-    <div className="space-y-10 max-w-2xl">
-      <header className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-accent-muted)]">
+    <div className="w-full space-y-8 lg:space-y-10 pb-10">
+      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-6 py-8 sm:px-10 sm:py-10 shadow-[var(--shadow-card)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-accent-muted)]">
           Select Surplus LLC
         </p>
-        <h1 className="text-3xl sm:text-4xl font-bold text-[var(--color-heading)] tracking-tight leading-tight">
+        <h1 className="mt-3 text-3xl sm:text-4xl font-bold text-[var(--color-heading)] tracking-tight">
           Hi {FIRST_NAME},
         </h1>
-        <p className="text-base text-[var(--color-body-muted)] leading-relaxed max-w-xl">
-          This workspace is for one flow: <strong className="text-[var(--color-heading)] font-semibold">find</strong> prospects,{" "}
-          <strong className="text-[var(--color-heading)] font-semibold">save</strong> them,{" "}
-          <strong className="text-[var(--color-heading)] font-semibold">email</strong> them, then check who was contacted. Follow
-          the steps below in order, or use the menu on the left anytime.
+        <p className="mt-4 max-w-3xl text-base sm:text-[17px] text-[var(--color-body-muted)] leading-relaxed">
+          Work left to right: <strong className="text-[var(--color-heading)] font-semibold">find</strong> →{" "}
+          <strong className="text-[var(--color-heading)] font-semibold">save</strong> →{" "}
+          <strong className="text-[var(--color-heading)] font-semibold">email</strong> →{" "}
+          <strong className="text-[var(--color-heading)] font-semibold">check sends</strong>. Each card opens the right screen;
+          use the sidebar whenever you already know where you&apos;re headed.
         </p>
-      </header>
+      </section>
 
-      <section
-        aria-labelledby="how-to-heading"
-        className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] px-5 py-6 sm:px-7 sm:py-7"
-      >
-        <h2
-          id="how-to-heading"
-          className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-muted)]"
-        >
-          How to use this
-        </h2>
-        <ol className="mt-6 space-y-6 list-none">
-          {HOW_TO_STEPS.map((step) => (
-            <li key={step.n} className="flex gap-4">
-              <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-white tabular-nums"
-                aria-hidden
-              >
-                {step.n}
-              </span>
-              <div className="min-w-0 pt-0.5 space-y-2">
-                <h3 className="text-base font-bold text-[var(--color-heading)] tracking-tight">{step.title}</h3>
-                <p className="text-sm text-[var(--color-body-muted)] leading-relaxed">{step.body}</p>
-                <Link href={step.href} className="dash-link text-sm font-semibold inline-block">
-                  {step.cta} →
-                </Link>
+      <section aria-labelledby="steps-heading">
+        <div className="flex flex-wrap items-end justify-between gap-3 pb-4 border-b border-[var(--color-border-subtle)]">
+          <h2 id="steps-heading" className="text-lg font-bold text-[var(--color-heading)] tracking-tight">
+            Your workflow
+          </h2>
+          <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted)]">
+            5 steps · do in order the first few times
+          </span>
+        </div>
+
+        <ol className="mt-6 grid list-none gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 xl:gap-6">
+          {STEPS.map((step) => (
+            <li
+              key={step.n}
+              className="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.65)] transition-colors hover:border-[rgba(242,92,5,0.28)] min-h-[200px]"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent)] text-xs font-bold text-white tabular-nums shadow-[0_2px_12px_-4px_rgba(242,92,5,0.55)]"
+                  aria-hidden
+                >
+                  {step.n}
+                </span>
+                <h3 className="font-bold text-[var(--color-heading)] tracking-tight">{step.title}</h3>
               </div>
+              <p className="mt-3 flex-1 text-sm text-[var(--color-body-muted)] leading-relaxed">{step.body}</p>
+              <Link
+                href={step.href}
+                className="mt-5 dash-btn-secondary w-full justify-center py-2.5 text-sm font-semibold text-center border-[rgba(242,92,5,0.35)] hover:bg-[rgba(242,92,5,0.12)] hover:border-[rgba(242,92,5,0.45)]"
+              >
+                {step.cta}
+              </Link>
             </li>
           ))}
         </ol>
-      </section>
-
-      <section aria-labelledby="shortcuts-heading" className="space-y-3">
-        <h2 id="shortcuts-heading" className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--color-muted)]">
-          Quick buttons
-        </h2>
-        <p className="text-sm text-[var(--color-body-muted)]">Same pages as above — handy if you already know where you&apos;re going.</p>
-        <nav aria-label="Quick links">
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {QUICK_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="dash-btn-primary w-full justify-center text-center py-3 text-sm font-medium inline-flex"
-                >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </section>
     </div>
   );
