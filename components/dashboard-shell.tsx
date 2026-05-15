@@ -12,7 +12,7 @@ const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/lead-finder", label: "Find leads" },
   { href: "/leads", label: "Leads" },
   { href: "/send-emails", label: "Send email" },
-  { href: "/email-tracking", label: "Activity" },
+  { href: "/email-tracking", label: "Sent mail" },
   { href: "/settings", label: "Settings" },
 ];
 

@@ -109,13 +109,15 @@ export default function EmailTrackingPage() {
   return (
     <div className="space-y-10 max-w-6xl">
       <PageHeader
-        title="Activity"
+        title="Who you&apos;ve emailed"
         description={
           <>
-            Sends and delivery issues per lead.
+            A simple log of <strong className="text-[var(--color-heading)] font-semibold">outbound mail</strong> sent from
+            this tool (see counts and tables below). Replies to those messages still live in Gmail — this page is not your
+            inbox.
             {" "}
             <Link href="/send-emails" className="dash-link">
-              Send email
+              Send mail
             </Link>
             {" · "}
             <Link href="/leads" className="dash-link">
@@ -123,15 +125,21 @@ export default function EmailTrackingPage() {
             </Link>
             {" · "}
             <Link href="/settings#outbound-sender" className="dash-link">
-              Sender settings
+              Who mail sends as
             </Link>
           </>
         }
       />
 
+      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]/40 px-4 py-3 text-sm text-[var(--color-body-muted)] leading-relaxed">
+        The <strong className="text-[var(--color-heading)] font-semibold">bottom table</strong> only fills in when bounce / spam complaint
+        webhooks are set up (see developer section below). Missing webhooks doesn&apos;t mean mail failed silently — it usually
+        means this dashboard never received the error event from Resend.
+      </div>
+
       <details className="group rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-body-muted)]">
         <summary className="cursor-pointer list-none font-medium text-[var(--color-heading)] flex items-center justify-between gap-2">
-          Resend webhook setup
+          Developer — bounce &amp; complaint webhooks (Resend)
           <span className="text-xs font-normal text-[var(--color-muted)] group-open:hidden">Show</span>
           <span className="hidden text-xs font-normal text-[var(--color-muted)] group-open:inline">Hide</span>
         </summary>
@@ -141,7 +149,7 @@ export default function EmailTrackingPage() {
               Sending domain +{" "}
               <code className="text-[var(--color-body)]">RESEND_API_KEY</code> — save in{" "}
               <Link href="/settings#outbound-sender" className="dash-link font-semibold">
-                Settings → Outbound sender
+                Sending email identity in Settings
               </Link>
               .
             </li>
@@ -183,23 +191,23 @@ export default function EmailTrackingPage() {
         <DashCard className="p-5 ring-2 ring-[var(--color-accent)]/20">
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Not emailed yet</p>
           <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.neverSent}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Valid email on file; no recorded send.</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Has an email address, but nothing sent yet from here.</p>
         </DashCard>
         <DashCard className="p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Emailed (≥ once)</p>
           <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.emailed}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">At least one send recorded.</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">At least one message sent through this dashboard.</p>
         </DashCard>
         <DashCard className="p-5">
           <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)]">Won / not interested</p>
           <p className="mt-2 text-3xl font-bold tabular-nums text-[var(--color-heading)]">{funnel.terminalPipeline}</p>
-          <p className="mt-2 text-xs text-[var(--color-body-muted)]">Emailed and marked Won or Not interested.</p>
+          <p className="mt-2 text-xs text-[var(--color-body-muted)]">People you emailed who are marked Won or Not interested.</p>
         </DashCard>
       </div>
 
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h2 className="text-sm font-medium text-[var(--color-heading)]">Recent outbound sends</h2>
+          <h2 className="text-sm font-medium text-[var(--color-heading)]">Recent sends from this tool</h2>
           <button
             type="button"
             className="text-xs text-[var(--color-accent)] font-semibold hover:underline"
@@ -242,9 +250,9 @@ export default function EmailTrackingPage() {
 
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h2 className="text-sm font-medium text-[var(--color-heading)]">Delivery issues (bounce / complaint)</h2>
+          <h2 className="text-sm font-medium text-[var(--color-heading)]">Problems (bounces &amp; spam complaints)</h2>
           {!webhookOk ? (
-            <span className="text-xs font-semibold text-amber-500">Set webhook secret to capture</span>
+            <span className="text-xs font-semibold text-amber-500">Needs webhook setup to list rows</span>
           ) : null}
         </div>
         <div className="overflow-x-auto text-sm">
@@ -271,7 +279,16 @@ export default function EmailTrackingPage() {
             </tbody>
           </table>
           {!deliveryIssues.length ? (
-            <p className="text-[var(--color-muted)] text-sm py-6">No bounce or complaint rows yet.</p>
+            <div className="text-[var(--color-muted)] text-sm py-6 space-y-2 leading-relaxed">
+              <p>Nothing logged here yet — either deliveries are healthy, or webhook events aren&apos;t connected.</p>
+              {!webhookOk ? (
+                <p className="text-xs text-[var(--color-body-muted)]">
+                  Expand <strong className="text-[var(--color-heading)]">&quot;Developer — bounce &amp; complaint webhooks&quot;</strong>{" "}
+                  above for setup steps (Resend dashboard +{' '}
+                  <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code>).
+                </p>
+              ) : null}
+            </div>
           ) : null}
         </div>
       </section>

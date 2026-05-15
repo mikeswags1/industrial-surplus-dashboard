@@ -4,7 +4,7 @@ const QUICK_LINKS = [
   { href: "/lead-finder", label: "Find leads" },
   { href: "/leads", label: "Lead list" },
   { href: "/send-emails", label: "Send email" },
-  { href: "/email-tracking", label: "Activity" },
+  { href: "/email-tracking", label: "Sent mail" },
   { href: "/settings", label: "Settings" },
 ] as const;
 

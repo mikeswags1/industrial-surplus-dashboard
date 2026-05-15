@@ -192,7 +192,7 @@ export default function SendEmailsPage() {
             </Link>
             {" · "}
             <Link href="/email-tracking" className="dash-link">
-              Activity
+              Sent mail
             </Link>
             {" · "}
             <Link href="/settings#outbound-sender" className="dash-link">
