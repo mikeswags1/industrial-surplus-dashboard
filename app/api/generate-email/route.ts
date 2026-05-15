@@ -17,19 +17,19 @@ function template(b: Body) {
   const company = b.company_name || "your team";
   const pain = b.pain_point || "unused assets taking space";
 
-  const subject = `Fast cash quote for ${equipment}${state ? ` (${b.state})` : ""}`;
+  const subject = `Quick question — unused ${equipment}${state ? ` (${b.state})` : ""}`;
   const body = `Hi ${company},
 
-We buy surplus industrial equipment nationwide. If ${company} has unused forklifts, electrical gear, circuit breakers, valves, machinery, scrap, or warehouse inventory${state}, we can provide a fast cash quote and handle pickup and logistics.
+We help companies clear surplus industrial equipment — forklifts, electrical, valves, machinery, scrap, and warehouse inventory${state}. If you have idle assets or end-of-line units, we can usually turn them around with straightforward pickup.
 
-Context: ${industry}. Pain we often solve: ${pain}.
+Worth noting: ${industry}. We often hear about ${pain}.
 
-If now is not a fit, no worries — happy to stay on file.
+If timing is off, no problem — happy to reconnect another quarter.
 
 Best regards`;
 
-  const follow1 = `Quick bump — still open to a no-obligation valuation on your ${equipment.toLowerCase()}?`;
-  const follow2 = `Last note from me — we pay quickly on agreed deals and coordinate rigging where needed. Worth a 10-minute call?`;
+  const follow1 = `Circling back — still open to a quick look at ${equipment.toLowerCase()} you might want to move?`;
+  const follow2 = `Last check-in — we coordinate pickup on agreed loads. Open to a short call this week?`;
 
   return { subject, body, follow_up_1: follow1, follow_up_2: follow2 };
 }
@@ -49,8 +49,10 @@ export async function POST(req: Request) {
 
   try {
     const openai = new OpenAI({ apiKey: key });
-    const sys = `You write concise B2B cold emails for an industrial surplus buyer. 
-Tone: professional, direct, no hype, no spam clichés, no fake personalization.
+    const sys = `You write concise B2B cold emails for an industrial surplus buyer (Select Surplus style).
+Tone: calm professional, one human talking to another — never salesy, never “get rich quick.”
+Avoid in subjects and opening lines: cash, fast cash, guaranteed, act now, free money, URGENT, !!!, and “fast quote.”
+Prefer: short specific subject, plain question or observation about their equipment/region.
 Output strict JSON with keys: subject (string), body (string), follow_up_1 (string), follow_up_2 (string).
 Keep body under 160 words. No HTML.`;
 
