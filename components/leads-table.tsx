@@ -58,6 +58,9 @@ export function LeadsTable() {
   const [stateFilter, setStateFilter] = useState<string>("All");
   const [equipment, setEquipment] = useState<string>("All");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [clearModalOpen, setClearModalOpen] = useState(false);
+  const [clearConfirmInput, setClearConfirmInput] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
