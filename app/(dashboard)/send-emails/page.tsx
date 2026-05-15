@@ -144,10 +144,23 @@ export default function SendEmailsPage() {
         results?: { leadId: string; ok: boolean; error?: string; skipped?: string }[];
       };
       const skippedAlready = (r.results ?? []).filter((x) => x.skipped === "already_sent").length;
+      const failures = (r.results ?? []).filter((x) => !x.ok);
+      const detailParts = failures.map((x) => {
+        const lead = leads.find((l) => l.id === x.leadId);
+        const label = lead?.company_name?.trim() || lead?.email || x.leadId.slice(0, 8);
+        if (x.skipped === "already_sent") {
+          return `${label}: blocked as duplicate (click “Force resend selected” if you really want another send)`;
+        }
+        return `${label}: ${x.error ?? "failed"}`;
+      });
+      const detail =
+        detailParts.length > 0
+          ? ` ${detailParts.join(" · ")}`
+          : skippedAlready > 0
+            ? ` (${skippedAlready} blocked — already emailed)`
+            : "";
       setResultMsg(
-        `Sent: ${r.sent ?? 0}, not sent (errors / skipped already): ${r.failed ?? 0}${
-          skippedAlready ? ` (${skippedAlready} skipped — duplicate send blocked)` : ""
-        }.`,
+        `Sent: ${r.sent ?? 0}, not sent: ${r.failed ?? 0}.${detail}`,
       );
       await refresh();
       await loadLogs();
