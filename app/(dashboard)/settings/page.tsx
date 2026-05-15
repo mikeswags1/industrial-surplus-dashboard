@@ -214,6 +214,29 @@ export default function SettingsPage() {
         )}
       </DashCard>
 
+      <DashCard className="p-6 space-y-3 text-sm text-[var(--color-body-muted)]">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+          Photo / logo next to your emails (Gmail &amp; others)
+        </h2>
+        <p className="leading-relaxed">
+          This app can&apos;t upload an “avatar image” to Resend for you — the inbox (Gmail, Outlook, etc.) decides what
+          shows. For addresses like <code className="text-[var(--color-body)]">jake@selectsurplususa.com</code>, the usual
+          free approach is{" "}
+          <a className="dash-link font-semibold" href="https://gravatar.com" target="_blank" rel="noreferrer">
+            Gravatar
+          </a>
+          : create an account with the <strong className="text-[var(--color-heading)]">exact same From email</strong> and upload Jake&apos;s photo there. Some clients show it;
+          Gmail also factors Google account history.
+        </p>
+        <p className="text-xs text-[var(--color-muted)] leading-relaxed">
+          A branded logo in the inbox list for large senders often uses{" "}
+          <a className="dash-link" href="https://bimigroup.org/" target="_blank" rel="noreferrer">
+            BIMI
+          </a>{" "}
+          (DMARC + a verified mark certificate) — heavier setup, not required for day‑one testing.
+        </p>
+      </DashCard>
+
       <DashCard className="p-6 space-y-4 text-sm">
         <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">Backend status</h2>
         <p className="text-[var(--color-body-muted)]">

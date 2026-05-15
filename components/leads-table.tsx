@@ -206,7 +206,7 @@ export function LeadsTable() {
                 )
               }
             >
-              Mark replied
+              Record reply
             </button>
             <button
               type="button"

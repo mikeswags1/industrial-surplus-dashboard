@@ -124,8 +124,12 @@ export default function EmailTrackingPage() {
         description={(
           <>
             Counts mirror your leads list plus everything logged in{" "}
-            <code className="text-[var(--color-body)]">outreach_logs</code>. Sends are tracked when mail goes out;
-            replies need Resend inbound + a signed webhook pointing at this app.{" "}
+            <code className="text-[var(--color-body)]">outreach_logs</code>. Sends log automatically.{" "}
+            <strong className="text-[var(--color-heading)]">Gmail-only replies</strong> (Reply-To) do not hit Resend — use{" "}
+            <Link href="/leads" className="dash-link font-semibold">
+              Lead list → Record reply
+            </Link>{" "}
+            to sync the dashboard, or set up the webhook path below for hands‑free logging.{" "}
             <Link href="/send-emails" className="dash-link">
               Send emails
             </Link>
@@ -136,6 +140,19 @@ export default function EmailTrackingPage() {
           </>
         )}
       />
+
+      <DashCard className="p-5 border-l-4 border-l-amber-500/90 bg-amber-950/20 space-y-2">
+        <p className="text-sm font-semibold text-[var(--color-heading)]">Replied in Gmail but nothing here?</p>
+        <p className="text-sm text-[var(--color-body-muted)] leading-relaxed">
+          With <strong className="text-[var(--color-heading)]">Reply-To</strong> set to Gmail, their reply never passes through Resend, so this page cannot see it until you either{" "}
+          <Link href="/leads" className="dash-link">
+            open Leads
+          </Link>
+          , select that company, and click <strong className="text-[var(--color-heading)]">Record reply</strong> (adds a reply row + bumps counts), or you later configure{" "}
+          <strong className="text-[var(--color-heading)]">Resend Receiving</strong> on your domain +{" "}
+          <code className="text-[var(--color-body)]">RESEND_WEBHOOK_SECRET</code>.
+        </p>
+      </DashCard>
 
       <DashCard className="p-6 space-y-4 text-sm text-[var(--color-body-muted)]">
         <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-muted)]">
