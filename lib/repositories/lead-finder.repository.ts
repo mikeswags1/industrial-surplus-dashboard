@@ -1,14 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type {
-  LeadFinderCandidateRow,
-  LeadFinderRunRow,
-} from "@/lib/database/types";
-import { leadRowToLead, type LeadRow } from "@/lib/db/mappers";
+import type { LeadFinderCandidateRow, LeadFinderRunRow } from "@/lib/database/types";
 import type {
   LeadFinderCandidate,
   LeadFinderSearchInput,
   ScoredCandidate,
 } from "@/lib/lead-finder/types";
+import { leadRowToLead, type LeadRow } from "@/lib/db/mappers";
+import { isLeadFinderStatewideCity } from "@/lib/lead-finder/city-mode";
 import {
   leadFinderCandidateRowToCandidate,
   leadFinderRunRowToRun,
@@ -22,6 +20,14 @@ function summarizeList(parts: string[], maxShown = 3): string {
   return `${u.slice(0, maxShown).join(", ")} +${u.length - maxShown}`;
 }
 
+function summarizeRunCities(cities: string[], maxShown = 3): string {
+  const u = [...new Set(cities.map((p) => p.trim()).filter(Boolean))];
+  if (u.length === 1 && isLeadFinderStatewideCity(u[0])) {
+    return "Statewide";
+  }
+  return summarizeList(u, maxShown);
+}
+
 export async function createLeadFinderRun(
   admin: SupabaseClient,
   input: LeadFinderSearchInput
@@ -32,7 +38,7 @@ export async function createLeadFinderRun(
       provider: "google_places",
       status: "running",
       state: summarizeList(input.states),
-      city: summarizeList(input.cities),
+      city: summarizeRunCities(input.cities),
       industry: summarizeList(input.target_industries),
       equipment_type: input.equipment_type,
       requested_count: input.count,

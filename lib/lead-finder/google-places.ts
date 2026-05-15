@@ -1,4 +1,6 @@
 import { getGooglePlacesConfig } from "@/lib/env/server";
+import { displayNameForUsState } from "@/lib/geo/us-state-names";
+import type { LeadFinderPlaceQuery, ProviderCandidate } from "@/lib/lead-finder/types";
 import { presetForTargetIndustryLabel } from "@/lib/lead-finder/target-industries";
 import type { LeadFinderPlaceQuery, ProviderCandidate } from "@/lib/lead-finder/types";
 
@@ -48,13 +50,27 @@ export function isGooglePlacesNotConfiguredError(err: unknown): boolean {
   return err instanceof GooglePlacesNotConfiguredError;
 }
 
+function guessCityFromFormattedAddress(formatted?: string): string {
+  if (!formatted) return "";
+  const parts = formatted.split(",").map((p) => p.trim());
+  if (parts.length >= 2) {
+    return parts[parts.length - 2] ?? "";
+  }
+  return "";
+}
+
 function buildTextQuery(input: LeadFinderPlaceQuery) {
   const preset = presetForTargetIndustryLabel(input.target_industry);
   const phrase = preset?.placesQueryPhrase ?? input.target_industry.trim();
+  const stateAbbrev = input.state.trim().toUpperCase();
+  const stateName = displayNameForUsState(stateAbbrev);
+
+  if (isLeadFinderStatewideCity(input.city)) {
+    return `${phrase} in ${stateName}`;
+  }
+
   const city = input.city.trim();
-  const state = input.state.trim();
-  /** Buy-side: preset phrase + geo (avoid surplus-buyer wording that surfaces competitors). */
-  return `${phrase} in ${city}, ${state}`;
+  return `${phrase} in ${city}, ${stateAbbrev}`;
 }
 
 function normalizePlace(
@@ -64,6 +80,12 @@ function normalizePlace(
   const company = place.displayName?.text?.trim();
   if (!company) return null;
 
+  const stateAbbrev = input.state.trim().toUpperCase();
+  const cityFromGoogle = guessCityFromFormattedAddress(place.formattedAddress);
+  const cityField = isLeadFinderStatewideCity(input.city)
+    ? cityFromGoogle || stateAbbrev
+    : input.city.trim();
+
   return {
     provider: "google_places",
     provider_place_id: place.id ?? null,
@@ -71,8 +93,8 @@ function normalizePlace(
     website: place.websiteUri?.trim() ?? "",
     phone: place.nationalPhoneNumber?.trim() ?? "",
     email: "",
-    city: input.city.trim(),
-    state: input.state.trim().toUpperCase(),
+    city: cityField,
+    state: stateAbbrev,
     formatted_address: place.formattedAddress?.trim() ?? "",
     industry:
       place.primaryTypeDisplayName?.text?.trim() ||

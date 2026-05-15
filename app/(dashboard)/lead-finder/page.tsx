@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
+import type { LeadFinderCityMode } from "@/lib/lead-finder/city-mode";
 import { LEAD_FINDER_MAX_COMBINATIONS } from "@/lib/lead-finder/engine";
 import { LEAD_FINDER_TARGET_INDUSTRIES } from "@/lib/lead-finder/target-industries";
 import type {
@@ -85,7 +86,7 @@ export default function LeadFinderPage() {
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const [addAllBusy, setAddAllBusy] = useState(false);
-  const [stateFilter, setStateFilter] = useState("");
+  const [cityMode, setCityMode] = useState<LeadFinderCityMode>("specific");
   const [industryFilter, setIndustryFilter] = useState("");
 
   useEffect(() => {
@@ -101,13 +102,16 @@ export default function LeadFinderPage() {
     const parts = citiesText
       .split(/[\n,]+/)
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((s) => !s.includes("__LF_STATEWIDE__"));
     return [...new Set(parts)];
   }, [citiesText]);
 
+  const citySlots = cityMode === "statewide" ? 1 : parsedCities.length;
+
   const combinationCount = useMemo(
-    () => targetIndustries.length * selectedStates.length * parsedCities.length,
-    [targetIndustries.length, selectedStates.length, parsedCities.length]
+    () => targetIndustries.length * selectedStates.length * citySlots,
+    [targetIndustries.length, selectedStates.length, citySlots]
   );
 
   const combinationOk =
@@ -115,7 +119,7 @@ export default function LeadFinderPage() {
     combinationCount <= LEAD_FINDER_MAX_COMBINATIONS &&
     targetIndustries.length > 0 &&
     selectedStates.length > 0 &&
-    parsedCities.length > 0;
+    citySlots > 0;
 
   const filteredStates = useMemo(() => {
     const q = stateFilter.trim().toLowerCase();
@@ -172,7 +176,9 @@ export default function LeadFinderPage() {
         body: JSON.stringify({
           target_industries: targetIndustries,
           states: selectedStates,
-          cities: parsedCities,
+          ...(cityMode === "statewide"
+            ? { city_mode: "statewide" }
+            : { city_mode: "specific", cities: parsedCities }),
           equipment_type: equipment,
           count,
         }),
@@ -297,8 +303,49 @@ export default function LeadFinderPage() {
         <StepFrame
           step={1}
           title="Where should we look?"
-          hint="Pick states, then type cities (one per line)."
+          hint="Pick states, then choose whether to cover a whole state or only certain cities."
         >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label
+              className={`rounded-xl border p-4 cursor-pointer transition-all ${
+                cityMode === "statewide"
+                  ? "border-[var(--color-accent)] bg-[var(--color-accent)]/12 ring-2 ring-[var(--color-accent)]/35"
+                  : "border-[var(--color-border)] hover:border-[var(--color-border-subtle)]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="city-scope"
+                className="sr-only"
+                checked={cityMode === "statewide"}
+                onChange={() => setCityMode("statewide")}
+              />
+              <div className="font-bold text-[var(--color-heading)]">Whole state(s)</div>
+              <p className="mt-2 text-sm text-[var(--color-body-muted)] font-medium leading-relaxed">
+                One search per industry in each checked state — no city typing. Results can be anywhere in that state.
+              </p>
+            </label>
+            <label
+              className={`rounded-xl border p-4 cursor-pointer transition-all ${
+                cityMode === "specific"
+                  ? "border-[var(--color-accent)] bg-[var(--color-accent)]/12 ring-2 ring-[var(--color-accent)]/35"
+                  : "border-[var(--color-border)] hover:border-[var(--color-border-subtle)]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="city-scope"
+                className="sr-only"
+                checked={cityMode === "specific"}
+                onChange={() => setCityMode("specific")}
+              />
+              <div className="font-bold text-[var(--color-heading)]">Certain cities only</div>
+              <p className="mt-2 text-sm text-[var(--color-body-muted)] font-medium leading-relaxed">
+                Type the cities you care about — we combine them with each state and category you select.
+              </p>
+            </label>
+          </div>
+
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -343,20 +390,31 @@ export default function LeadFinderPage() {
                 )}
               </div>
             </div>
-            <label className="flex flex-col gap-2">
-              <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">City names</span>
-              <textarea
-                required
-                rows={8}
-                placeholder={"Houston\nDallas"}
-                className="dash-input min-h-[11rem] resize-y font-medium"
-                value={citiesText}
-                onChange={(e) => setCitiesText(e.target.value)}
-              />
-              <span className="text-xs text-[var(--color-muted)] font-medium">
-                One city per line, or commas between names.
-              </span>
-            </label>
+            {cityMode === "specific" ? (
+              <label className="flex flex-col gap-2">
+                <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">
+                  City names
+                </span>
+                <textarea
+                  required={cityMode === "specific"}
+                  rows={8}
+                  placeholder={"Houston\nDallas"}
+                  className="dash-input min-h-[11rem] resize-y font-medium"
+                  value={citiesText}
+                  onChange={(e) => setCitiesText(e.target.value)}
+                />
+                <span className="text-xs text-[var(--color-muted)] font-medium">
+                  One city per line, or commas between names.
+                </span>
+              </label>
+            ) : (
+              <div className="flex flex-col justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)]/60 p-6 text-center">
+                <p className="text-sm font-bold text-[var(--color-heading)]">No cities to type</p>
+                <p className="mt-2 text-sm text-[var(--color-body-muted)] font-medium leading-relaxed">
+                  We&apos;ll run a broader search labeled with the full state name (for example Texas, Florida).
+                </p>
+              </div>
+            )}
           </div>
         </StepFrame>
 
@@ -461,7 +519,12 @@ export default function LeadFinderPage() {
           <span>
             {combinationCount} Google search run{combinationCount === 1 ? "" : "s"}{" "}
             <span className="font-normal opacity-85">
-              ({targetIndustries.length} × {selectedStates.length} × {parsedCities.length})
+              ({targetIndustries.length} industries × {selectedStates.length}{" "}
+            {selectedStates.length === 1 ? "state" : "states"} ×{" "}
+            {cityMode === "statewide"
+              ? "whole-state search"
+              : `${parsedCities.length} ${parsedCities.length === 1 ? "city" : "cities"}`}
+            )
             </span>
           </span>
           <span className="text-xs sm:text-sm font-bold tabular-nums">
@@ -469,6 +532,12 @@ export default function LeadFinderPage() {
             {combinationOk ? " ✓" : ""}
           </span>
         </div>
+
+        {cityMode === "specific" && parsedCities.length === 0 ? (
+          <p className="text-sm text-amber-400 font-medium" role="alert">
+            Add at least one city below, or switch to <strong className="font-bold">Whole state(s)</strong>.
+          </p>
+        ) : null}
 
         {!combinationOk && combinationCount > LEAD_FINDER_MAX_COMBINATIONS ? (
           <p className="text-sm text-amber-400 font-medium" role="alert">
@@ -480,7 +549,9 @@ export default function LeadFinderPage() {
         combinationCount > 0 &&
         combinationCount <= LEAD_FINDER_MAX_COMBINATIONS ? (
           <p className="text-sm text-amber-400 font-medium" role="alert">
-            Pick at least one industry, one state, and one city.
+            {cityMode === "specific"
+              ? "Pick at least one industry, one state, and one city."
+              : "Pick at least one industry and one state."}
           </p>
         ) : null}
 

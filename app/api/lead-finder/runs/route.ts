@@ -3,6 +3,7 @@ import {
   isDatabaseNotConfiguredError,
   jsonDatabaseNotConfigured,
 } from "@/lib/api/database-error";
+import { isLeadFinderStatewideCity, LEAD_FINDER_STATEWIDE_CITY } from "@/lib/lead-finder/city-mode";
 import { LEAD_FINDER_MAX_COMBINATIONS, leadFinderSetup, runLeadFinder } from "@/lib/lead-finder/engine";
 import type { LeadFinderSearchInput } from "@/lib/lead-finder/types";
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
@@ -64,13 +65,23 @@ function parseInput(body: unknown): LeadFinderSearchInput | NextResponse {
     state?: string;
     city?: string;
     cities_text?: string;
+    city_mode?: string;
   };
 
   const states =
     parseStringList(b.states, { upperCase: true, allowLegacySingle: true }) ??
     (b.state?.trim() ? [b.state.trim().toUpperCase()] : null);
 
-  const cities = parseCitiesText(b);
+  const cityMode = typeof b.city_mode === "string" ? b.city_mode.trim().toLowerCase() : "";
+  let cities: string[] | null = null;
+  if (cityMode === "statewide") {
+    cities = [LEAD_FINDER_STATEWIDE_CITY];
+  } else {
+    cities = parseCitiesText(b);
+    if (cities?.some((city) => isLeadFinderStatewideCity(city) || city.trim().includes("__LF_STATEWIDE__"))) {
+      return bad("That city name isn’t allowed — pick “Whole state” instead.");
+    }
+  }
   const rawIndustries =
     parseStringList(b.target_industries, { upperCase: false, allowLegacySingle: false }) ??
     (typeof b.target_industry === "string" && b.target_industry.trim()
@@ -87,7 +98,12 @@ function parseInput(body: unknown): LeadFinderSearchInput | NextResponse {
     if (!(US_STATES as readonly string[]).includes(st)) return bad(`Invalid state: ${st}`);
   }
 
-  if (!cities?.length) return bad("At least one city is required (cities[], cities_text, or city)");
+  if (!cities?.length)
+    return bad(
+      cityMode === "statewide"
+        ? "Statewide mode invalid — try again or use specific cities."
+        : "Add at least one city, or switch to “Whole state”.",
+    );
 
   if (!rawIndustries?.length) {
     return bad("At least one target_industries entry is required (or target_industry / industry)");
