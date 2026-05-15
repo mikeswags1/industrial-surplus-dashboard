@@ -79,7 +79,7 @@ function parseInput(body: unknown): LeadFinderSearchInput | NextResponse {
   } else {
     cities = parseCitiesText(b);
     if (cities?.some((city) => isLeadFinderStatewideCity(city) || city.trim().includes("__LF_STATEWIDE__"))) {
-      return bad("That city name isn’t allowed — pick “Whole state” instead.");
+      return bad("That city name isn’t allowed — use “All cities in each state” (statewide mode) instead.");
     }
   }
   const rawIndustries =
@@ -102,7 +102,7 @@ function parseInput(body: unknown): LeadFinderSearchInput | NextResponse {
     return bad(
       cityMode === "statewide"
         ? "Statewide mode invalid — try again or use specific cities."
-        : "Add at least one city, or switch to “Whole state”.",
+        : "Add at least one city, or switch to “All cities in each state”.",
     );
 
   if (!rawIndustries?.length) {

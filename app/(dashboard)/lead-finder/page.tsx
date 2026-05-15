@@ -304,7 +304,7 @@ export default function LeadFinderPage() {
         <StepFrame
           step={1}
           title="Where should we look?"
-          hint="Pick states, then choose whether to cover a whole state or only certain cities."
+          hint="Pick states, then choose all cities in those states or only cities you list by name."
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <label
@@ -321,9 +321,10 @@ export default function LeadFinderPage() {
                 checked={cityMode === "statewide"}
                 onChange={() => setCityMode("statewide")}
               />
-              <div className="font-bold text-[var(--color-heading)]">Whole state(s)</div>
+              <div className="font-bold text-[var(--color-heading)]">All cities in each state</div>
               <p className="mt-2 text-sm text-[var(--color-body-muted)] font-medium leading-relaxed">
-                One search per industry in each checked state — no city typing. Results can be anywhere in that state.
+                Whole-state search: every metro and town in each checked state is in scope — no city list. One search
+                per industry per state.
               </p>
             </label>
             <label
@@ -340,9 +341,9 @@ export default function LeadFinderPage() {
                 checked={cityMode === "specific"}
                 onChange={() => setCityMode("specific")}
               />
-              <div className="font-bold text-[var(--color-heading)]">Certain cities only</div>
+              <div className="font-bold text-[var(--color-heading)]">Only certain cities</div>
               <p className="mt-2 text-sm text-[var(--color-body-muted)] font-medium leading-relaxed">
-                Type the cities you care about — we combine them with each state and category you select.
+                Limit to metros you list — we combine each name with the states and categories you selected.
               </p>
             </label>
           </div>
@@ -536,7 +537,7 @@ export default function LeadFinderPage() {
 
         {cityMode === "specific" && parsedCities.length === 0 ? (
           <p className="text-sm text-amber-400 font-medium" role="alert">
-            Add at least one city below, or switch to <strong className="font-bold">Whole state(s)</strong>.
+            Add at least one city below, or switch to <strong className="font-bold">All cities in each state</strong>.
           </p>
         ) : null}
 

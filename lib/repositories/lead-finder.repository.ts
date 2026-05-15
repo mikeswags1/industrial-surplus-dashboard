@@ -23,7 +23,7 @@ function summarizeList(parts: string[], maxShown = 3): string {
 function summarizeRunCities(cities: string[], maxShown = 3): string {
   const u = [...new Set(cities.map((p) => p.trim()).filter(Boolean))];
   if (u.length === 1 && isLeadFinderStatewideCity(u[0])) {
-    return "Statewide";
+    return "All cities in state";
   }
   return summarizeList(u, maxShown);
 }
