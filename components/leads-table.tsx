@@ -49,6 +49,7 @@ export function LeadsTable() {
     bulkSetStatus,
     dataSource,
     enrichLead,
+    deleteLead,
   } = useLeads();
 
   const [q, setQ] = useState("");
@@ -99,6 +100,22 @@ export function LeadsTable() {
 
   function clearSelection() {
     setSelected(new Set());
+  }
+
+  function openClearModal() {
+    setClearConfirmInput("");
+    setClearModalOpen(true);
+  }
+
+  function closeClearModal() {
+    setClearModalOpen(false);
+    setClearConfirmInput("");
+  }
+
+  function confirmClearSelection() {
+    if (clearConfirmInput.trim().toLowerCase() !== "clear") return;
+    clearSelection();
+    closeClearModal();
   }
 
   const selectedIds = Array.from(selected);
@@ -192,7 +209,7 @@ export function LeadsTable() {
         </button>
         <button
           type="button"
-          onClick={clearSelection}
+          onClick={openClearModal}
           className="dash-btn-secondary px-3 py-1.5 text-xs opacity-80"
         >
           Clear selection
@@ -228,6 +245,49 @@ export function LeadsTable() {
         ) : null}
       </div>
 
+      {clearModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/60 p-4">
+          <div
+            className="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-6 shadow-[var(--shadow-card)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-selection-title"
+          >
+            <h2 id="clear-selection-title" className="text-lg font-semibold text-[var(--color-heading)]">
+              Clear selection?
+            </h2>
+            <p className="mt-2 text-sm text-[var(--color-body-muted)] leading-relaxed">
+              Are you sure you want to clear the current checkbox selection? Type{" "}
+              <span className="font-mono text-[var(--color-body)]">clear</span> below to confirm.
+            </p>
+            <label className="mt-4 flex flex-col gap-1.5 text-sm">
+              <span className="text-[var(--color-muted)]">Confirmation</span>
+              <input
+                className="dash-input"
+                value={clearConfirmInput}
+                onChange={(e) => setClearConfirmInput(e.target.value)}
+                placeholder="Type clear"
+                autoComplete="off"
+                autoFocus
+              />
+            </label>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button type="button" className="dash-btn-secondary px-4 py-2 text-sm" onClick={closeClearModal}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="dash-btn-primary px-4 py-2 text-sm disabled:opacity-45"
+                disabled={clearConfirmInput.trim().toLowerCase() !== "clear"}
+                onClick={confirmClearSelection}
+              >
+                Clear selection
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)]">
         <table className="min-w-[1080px] w-full text-left text-sm">
           <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]/40 text-[11px] uppercase tracking-[0.08em] text-[var(--color-muted)]">
@@ -243,7 +303,7 @@ export function LeadsTable() {
               <th className="px-3 py-3 font-medium">Email status</th>
               <th className="px-3 py-3 font-medium">Last sent</th>
               <th className="px-3 py-3 font-medium max-w-[8rem]">Pipeline</th>
-              <th className="px-3 py-3 font-medium w-20">Notes</th>
+              <th className="px-3 py-3 font-medium min-w-[5.5rem]">Notes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
@@ -352,6 +412,32 @@ export function LeadsTable() {
                       }
                     >
                       Enrich
+                    </button>
+                  ) : null}
+                  {dataSource === "remote" ? (
+                    <button
+                      type="button"
+                      disabled={deletingId === l.id}
+                      className="block mt-1 text-xs font-medium text-rose-400/95 hover:text-rose-300 hover:underline disabled:opacity-50"
+                      onClick={() => {
+                        const label = l.company_name?.trim() || l.email || "this lead";
+                        if (!confirm(`Delete "${label}" permanently? This cannot be undone.`)) return;
+                        setDeletingId(l.id);
+                        void deleteLead(l.id)
+                          .then(() => {
+                            setSelected((prev) => {
+                              const n = new Set(prev);
+                              n.delete(l.id);
+                              return n;
+                            });
+                          })
+                          .catch((e) =>
+                            alert(e instanceof Error ? e.message : "Delete failed")
+                          )
+                          .finally(() => setDeletingId(null));
+                      }}
+                    >
+                      {deletingId === l.id ? "Deleting…" : "Delete"}
                     </button>
                   ) : null}
                 </td>

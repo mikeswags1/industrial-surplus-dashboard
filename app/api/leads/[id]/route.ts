@@ -3,7 +3,7 @@ import {
   isDatabaseNotConfiguredError,
   jsonDatabaseNotConfigured,
 } from "@/lib/api/database-error";
-import { updateLeadRow } from "@/lib/repositories/leads.repository";
+import { deleteLeadRow, updateLeadRow } from "@/lib/repositories/leads.repository";
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 import type { Lead } from "@/lib/types";
 
@@ -29,6 +29,22 @@ export async function PATCH(request: Request, ctx: Ctx) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
     return NextResponse.json({ lead: updated });
+  } catch (e) {
+    if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
+    const msg = e instanceof Error ? e.message : "internal_error";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: Request, ctx: Ctx) {
+  const { id } = await ctx.params;
+  try {
+    const admin = requireSupabaseAdmin();
+    const outcome = await deleteLeadRow(admin, id);
+    if (outcome === "not_found") {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true });
   } catch (e) {
     if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
     const msg = e instanceof Error ? e.message : "internal_error";

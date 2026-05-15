@@ -31,6 +31,7 @@ type LeadsContextValue = {
     rowErrors: { line: number; message: string }[];
   }>;
   enrichLead: (id: string) => Promise<void>;
+  deleteLead: (id: string) => Promise<void>;
 };
 
 const LeadsContext = createContext<LeadsContextValue | null>(null);
@@ -167,7 +168,22 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       }
       await refresh();
     },
-    [dataSource]
+    [dataSource, refresh]
+  );
+
+  const deleteLead = useCallback(
+    async (id: string) => {
+      if (dataSource !== "remote") {
+        throw new Error("Cannot delete leads until the database API is available.");
+      }
+      const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to delete lead");
+      }
+      await refresh();
+    },
+    [dataSource, refresh]
   );
 
   const value = useMemo(
@@ -181,6 +197,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       refresh,
       importFromCsvText,
       enrichLead,
+      deleteLead,
     }),
     [
       leads,
@@ -192,6 +209,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       refresh,
       importFromCsvText,
       enrichLead,
+      deleteLead,
     ]
   );
 

@@ -157,6 +157,16 @@ export async function updateLeadRow(
   return leadRowToLead(data as LeadRow);
 }
 
+export async function deleteLeadRow(
+  admin: SupabaseClient,
+  id: string
+): Promise<"deleted" | "not_found"> {
+  const { data, error } = await admin.from("leads").delete().eq("id", id).select("id");
+  if (error) throw new Error(error.message);
+  if (!data?.length) return "not_found";
+  return "deleted";
+}
+
 export async function updateLeadsStatusBulk(
   admin: SupabaseClient,
   ids: string[],
