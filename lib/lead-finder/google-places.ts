@@ -1,6 +1,6 @@
 import { getGooglePlacesConfig } from "@/lib/env/server";
 import { displayNameForUsState } from "@/lib/geo/us-state-names";
-import type { LeadFinderPlaceQuery, ProviderCandidate } from "@/lib/lead-finder/types";
+import { isLeadFinderStatewideCity } from "@/lib/lead-finder/city-mode";
 import { presetForTargetIndustryLabel } from "@/lib/lead-finder/target-industries";
 import type { LeadFinderPlaceQuery, ProviderCandidate } from "@/lib/lead-finder/types";
 
