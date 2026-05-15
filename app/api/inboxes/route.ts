@@ -9,6 +9,7 @@ import {
 } from "@/lib/repositories/inboxes.repository";
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 import { DEFAULT_ORGANIZATION_ID } from "@/lib/tenant/default-org";
+import { isBlockedResendFromDomain } from "@/lib/email/resend-from-validation";
 
 /** List sending identities for the default workspace (multi-org: extend with query param later). */
 export async function GET() {
@@ -47,6 +48,16 @@ export async function PUT(request: Request) {
         {
           error:
             "fromEmail is required. Use Resend’s format, e.g. Acme Sales <team@clientdomain.com>",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (isBlockedResendFromDomain(fromEmail)) {
+      return NextResponse.json(
+        {
+          error:
+            "Resend cannot send “from” consumer addresses like @gmail.com. Add a domain you control in Resend, set From to e.g. “Jake Mitchell <jake@yourdomain.com>”. If you use @gmail.com in Reply-To only, replies hit Gmail but bypass Resend webhooks — for automatic reply tracking, configure Receiving on your domain and avoid routing replies only to Gmail.",
         },
         { status: 400 }
       );

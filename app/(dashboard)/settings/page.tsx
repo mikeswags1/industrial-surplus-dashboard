@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { DashCard } from "@/components/dash-card";
 import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
+import { isBlockedResendFromDomain } from "@/lib/email/resend-from-validation";
 
 function modeLabel(m: string) {
   if (m === "remote") return "connected";
@@ -24,6 +25,8 @@ export default function SettingsPage() {
   const [inboxSaving, setInboxSaving] = useState(false);
   const [inboxErr, setInboxErr] = useState<string | null>(null);
   const [inboxOk, setInboxOk] = useState<string | null>(null);
+
+  const consumerFromWarning = useMemo(() => isBlockedResendFromDomain(inboxFrom), [inboxFrom]);
 
   useEffect(() => {
     if (leadsMode !== "remote") return;
@@ -124,8 +127,8 @@ export default function SettingsPage() {
             Outbound sender
           </h2>
           <p className="mt-2 text-xs text-[var(--color-body-muted)] leading-relaxed">
-            Stored in Supabase <code className="text-[var(--color-body)]">inboxes</code>. Must match a
-            verified domain in{" "}
+            Stored in Supabase <code className="text-[var(--color-body)]">inboxes</code>. The visible{" "}
+            <strong className="text-[var(--color-heading)]">From</strong> must use an address at a domain you verify in{" "}
             <a
               className="dash-link"
               href="https://resend.com/domains"
@@ -133,9 +136,13 @@ export default function SettingsPage() {
               rel="noreferrer"
             >
               Resend
-            </a>
-            . Uses each lead’s <code className="text-[var(--color-body)]">organization_id</code>; this
-            form sets the default workspace.
+            </a>{" "}
+            (consumer mail like{" "}
+            <code className="text-[var(--color-body)]">@gmail.com</code> cannot be authenticated as From). Jake can still{" "}
+            <strong className="text-[var(--color-heading)]">receive</strong> replies in Gmail: use{" "}
+            <code className="text-[var(--color-body)]">jakemitchellselect@gmail.com</code> in{" "}
+            <strong className="text-[var(--color-heading)]">Reply-To</strong> below, while From stays something like{" "}
+            <code className="text-[var(--color-body)]">Jake Mitchell &lt;jake@select-surplus-domain.com&gt;</code>.
           </p>
         </div>
 
@@ -145,6 +152,20 @@ export default function SettingsPage() {
           <p className="text-[var(--color-body-muted)] text-xs">Loading…</p>
         ) : (
           <form onSubmit={saveInbox} className="space-y-4 max-w-lg">
+            {consumerFromWarning ? (
+              <p
+                className="rounded-xl border border-amber-500/40 bg-amber-950/25 px-3 py-2.5 text-xs text-amber-100/95 leading-relaxed"
+                role="status"
+              >
+                This From line looks like consumer mail (@gmail, @yahoo, etc.). Resend will reject sends — switch to an
+                address on{" "}
+                <Link href="https://resend.com/domains" className="underline underline-offset-2">
+                  your verified domain
+                </Link>
+                , and put <code className="text-[11px]">jakemitchellselect@gmail.com</code> in Reply-To if Jake reads
+                mail there.
+              </p>
+            ) : null}
             <label className="flex flex-col gap-2">
               <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">Display label (internal)</span>
               <input
@@ -163,16 +184,21 @@ export default function SettingsPage() {
                 className="dash-input font-mono text-[13px]"
                 value={inboxFrom}
                 onChange={(e) => setInboxFrom(e.target.value)}
-                placeholder="Acme Sales &lt;sales@verified-client-domain.com&gt;"
+                placeholder="Jake Mitchell &lt;jake@your-verified-domain.com&gt;"
               />
             </label>
             <label className="flex flex-col gap-2">
               <span className="dash-label normal-case tracking-normal text-[var(--color-body-muted)]">Reply-To (optional)</span>
+              <span className="text-[11px] text-[var(--color-muted)] leading-snug">
+                If prospects reply to Gmail here, replies never pass through Resend, so automatic &quot;replied&quot; tracking from
+                the webhook will not fire. For hands-off dashboard tracking, use Receiving on your verified domain instead
+                and keep Reply-To on that domain (or leave Reply-To blank).
+              </span>
               <input
                 className="dash-input font-mono text-[13px]"
                 value={inboxReplyTo}
                 onChange={(e) => setInboxReplyTo(e.target.value)}
-                placeholder="inbox@client.com"
+                placeholder="jakemitchellselect@gmail.com"
               />
             </label>
             {inboxErr ? <p className="text-xs text-red-400">{inboxErr}</p> : null}

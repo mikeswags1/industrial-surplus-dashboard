@@ -155,9 +155,13 @@ export default function EmailTrackingPage() {
             <Link href="/settings#outbound-sender" className="dash-link font-semibold">
               Settings → Outbound sender
             </Link>
-            , save the client&apos;s <strong className="text-[var(--color-heading)]">From</strong> using that domain
-            (e.g. <code className="text-[var(--color-body)]">Client Name &lt;sales@clientdomain.com&gt;</code>). That
-            is what recipients see — it is linked to sends from the dashboard automatically.
+            , save the <strong className="text-[var(--color-heading)]">From</strong> address on that verified domain — e.g.{" "}
+            <code className="text-[var(--color-body)]">Jake Mitchell &lt;jake@your-business-domain.com&gt;</code>.
+            Gmail addresses like{" "}
+            <code className="text-[var(--color-body)]">jakemitchellselect@gmail.com</code> cannot be the authenticated
+            From with Resend. You may put Gmail in Reply-To so Jake reads replies there — note that replies then bypass
+            Resend, so you won&apos;t get automatic webhook &quot;replied&quot; rows unless leads reply to your verified-domain
+            address instead.
           </li>
           <li>
             In Vercel (or hosting), set{" "}
