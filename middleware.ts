@@ -6,6 +6,24 @@ import {
   siteAccessCookieMatches,
 } from "@/lib/access/site-access";
 
+/** Production: redirect browser traffic away from *.vercel.app (GET/HEAD only so POST webhooks keep working). */
+function canonicalRedirect(request: NextRequest): NextResponse | null {
+  const host = process.env.CANONICAL_HOST?.trim().toLowerCase();
+  if (!host || process.env.VERCEL_ENV !== "production") return null;
+
+  const method = request.method;
+  if (method !== "GET" && method !== "HEAD") return null;
+
+  const { hostname } = request.nextUrl;
+  if (!hostname.endsWith(".vercel.app")) return null;
+  if (hostname === host) return null;
+
+  const url = request.nextUrl.clone();
+  url.hostname = host;
+  url.protocol = "https:";
+  return NextResponse.redirect(url, 308);
+}
+
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -16,6 +34,9 @@ export function middleware(request: NextRequest) {
   ) {
     return NextResponse.next();
   }
+
+  const canon = canonicalRedirect(request);
+  if (canon) return canon;
 
   if (
     pathname === "/access" ||

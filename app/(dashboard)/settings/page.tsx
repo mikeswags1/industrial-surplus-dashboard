@@ -317,6 +317,11 @@ export default function SettingsPage() {
             <code className="text-zinc-300">1</code> to turn the gate off (local dev).
           </li>
           <li>
+            <code className="text-zinc-300">CANONICAL_HOST</code> — e.g.{" "}
+            <code className="text-zinc-300">selectsurplususa.com</code> — production GET/HEAD from{" "}
+            <code className="text-zinc-300">*.vercel.app</code> redirect here (after domain is added in Vercel).
+          </li>
+          <li>
             <code className="text-zinc-300">OUTBOUND_MAX_SENDS_PER_HOUR</code> — optional cap (default 100)
           </li>
         </ul>
