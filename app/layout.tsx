@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
-import { LeadsProvider } from "@/context/leads-context";
 
 const fontDashboard = Montserrat({
   subsets: ["latin"],
@@ -23,9 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={fontDashboard.variable}>
-      <body>
-        <LeadsProvider>{children}</LeadsProvider>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

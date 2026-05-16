@@ -28,6 +28,22 @@ export default function SettingsPage() {
 
   const consumerFromWarning = useMemo(() => isBlockedResendFromDomain(inboxFrom), [inboxFrom]);
 
+  const [gateActive, setGateActive] = useState(false);
+  const [gateExplicitlyDisabled, setGateExplicitlyDisabled] = useState(false);
+
+  useEffect(() => {
+    void fetch("/api/access", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j: { gateActive?: boolean; explicitlyDisabled?: boolean }) => {
+        setGateActive(Boolean(j.gateActive));
+        setGateExplicitlyDisabled(Boolean(j.explicitlyDisabled));
+      })
+      .catch(() => {
+        setGateActive(false);
+        setGateExplicitlyDisabled(false);
+      });
+  }, []);
+
   useEffect(() => {
     if (leadsMode !== "remote") return;
     setInboxLoading(true);
@@ -86,6 +102,17 @@ export default function SettingsPage() {
           </>
         }
       />
+
+      {gateExplicitlyDisabled ? (
+        <p
+          className="rounded-xl border border-amber-500/40 bg-amber-950/25 px-4 py-3 text-xs text-amber-100/95 leading-relaxed"
+          role="status"
+        >
+          The access-code gate is <strong className="font-semibold text-amber-50">off</strong> because{" "}
+          <code className="text-[var(--color-body)]">SITE_ACCESS_DISABLED</code> is set on the server. Remove it in Vercel (or{" "}
+          <code className="text-[var(--color-body)]">.env.local</code>) if visitors should enter the PIN first.
+        </p>
+      ) : null}
 
       <DashCard id="outbound-sender" className="p-6 space-y-4 text-sm">
         <div>
@@ -186,6 +213,28 @@ export default function SettingsPage() {
         )}
       </DashCard>
 
+      {gateActive ? (
+        <DashCard className="p-6 space-y-4 text-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)]">
+            Site access
+          </h2>
+          <p className="text-[var(--color-body-muted)] leading-relaxed">
+            This browser unlocked the dashboard with the shared access code. Use below if someone else uses this device or you want to lock it again.
+          </p>
+          <button
+            type="button"
+            className="dash-btn-secondary"
+            onClick={() => {
+              void fetch("/api/access", { method: "DELETE", credentials: "include" }).then(() => {
+                window.location.href = "/access";
+              });
+            }}
+          >
+            Require access code again
+          </button>
+        </DashCard>
+      ) : null}
+
       <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-4 sm:p-5">
         <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-muted)] flex items-center justify-between gap-2">
           Avatar in inbox (optional)
@@ -257,6 +306,15 @@ export default function SettingsPage() {
           <li>
             <code className="text-zinc-300">RESEND_API_KEY</code> — required to send mail. Default From can fall back to{" "}
             <code className="text-zinc-300">RESEND_FROM_EMAIL</code> if nothing is saved above.
+          </li>
+          <li>
+            <code className="text-zinc-300">SITE_ACCESS_CODE</code>,{" "}
+            <code className="text-zinc-300">SITE_ACCESS_SESSION_TOKEN</code> — optional overrides (defaults include code{" "}
+            <code className="text-zinc-300">5723</code>).
+          </li>
+          <li>
+            <code className="text-zinc-300">SITE_ACCESS_DISABLED</code> — set to{" "}
+            <code className="text-zinc-300">1</code> to turn the gate off (local dev).
           </li>
           <li>
             <code className="text-zinc-300">OUTBOUND_MAX_SENDS_PER_HOUR</code> — optional cap (default 100)
