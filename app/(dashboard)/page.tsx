@@ -59,6 +59,44 @@ export default function HomePage() {
         </p>
       </section>
 
+      <section
+        aria-labelledby="warmup-heading"
+        className="rounded-2xl border border-amber-500/35 bg-amber-950/18 px-6 py-6 sm:px-8 sm:py-7 shadow-[var(--shadow-card)]"
+      >
+        <h2
+          id="warmup-heading"
+          className="text-sm font-bold text-amber-100/95 tracking-tight sm:text-[15px]"
+        >
+          First two weeks — easy on volume (stays out of spam)
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm text-amber-50/85 leading-relaxed">
+          Gmail and other providers watch how fast a new sender ramps up. Blasting big batches early makes it more likely mail lands
+          in spam for everyone. For about the <strong className="text-amber-50 font-semibold">first two weeks</strong>, keep outreach
+          light and increase slowly:
+        </p>
+        <ul className="mt-4 max-w-3xl list-disc space-y-2 pl-5 text-sm text-amber-50/85 leading-relaxed">
+          <li>
+            <strong className="text-amber-50 font-semibold">Start small</strong> — a handful of new people per day (roughly single
+            digits to low teens), not dozens or forty-at-once, until things look healthy.
+          </li>
+          <li>
+            <strong className="text-amber-50 font-semibold">Ramp week by week</strong> — add a bit more only after sends look fine
+            and you&apos;re not piling up bounces or angry replies.
+          </li>
+          <li>
+            <strong className="text-amber-50 font-semibold">Clean list</strong> — skip bad addresses and obvious mismatches; bad data
+            hurts deliverability for the whole domain.
+          </li>
+          <li>
+            <strong className="text-amber-50 font-semibold">Watch Sent mail</strong> — check there for bounces or complaints;
+            if you see problems, slow down before sending more.
+          </li>
+        </ul>
+        <p className="mt-4 max-w-3xl text-xs text-amber-100/65 leading-relaxed">
+          After that warmup period you can raise batch sizes — still avoid sudden huge spikes in one day.
+        </p>
+      </section>
+
       <section aria-labelledby="steps-heading">
         <div className="flex flex-wrap items-end justify-between gap-3 pb-4 border-b border-[var(--color-border-subtle)]">
           <h2 id="steps-heading" className="text-lg font-bold text-[var(--color-heading)] tracking-tight">

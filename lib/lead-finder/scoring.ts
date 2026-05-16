@@ -348,15 +348,20 @@ outreach_angle: one concise cold-email angle focused on BUY / REMOVE / RECYCLE â
       typeof parsed.reason_selected === "string"
         ? parsed.reason_selected.trim()
         : "";
-    const reason_selected = (
-      reasonRaw.length ? reasonRaw : heuristicScore(candidate, searchContext).reason_selected
-    ).slice(0, 2200);
-
     const angleRaw =
       typeof parsed.outreach_angle === "string" ? parsed.outreach_angle.trim() : "";
+    const needsHeuristicFallback = !reasonRaw.length || !angleRaw.length;
+    const heuristicFallback = needsHeuristicFallback
+      ? heuristicScore(candidate, searchContext)
+      : null;
+
+    const reason_selected = (
+      reasonRaw.length ? reasonRaw : (heuristicFallback?.reason_selected ?? "")
+    ).slice(0, 2200);
+
     const outreach_angle = angleRaw.length
       ? angleRaw.slice(0, 500)
-      : heuristicScore(candidate, searchContext).outreach_angle;
+      : (heuristicFallback?.outreach_angle ?? "");
 
     return {
       asset_likelihood_score: score,

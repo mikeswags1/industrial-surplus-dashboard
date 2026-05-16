@@ -2,9 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { DashCard } from "@/components/dash-card";
 import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
+import type { Lead } from "@/lib/types";
+import {
+  BROADCAST_RECIPIENT_THRESHOLD,
+  deriveBatchGenerationInputs,
+  type BatchSpecificityMode,
+} from "@/lib/email/batch-email-generation";
 
 type OutreachLog = {
   id: string;
@@ -48,6 +53,23 @@ function appendWebsiteFooter(
   };
 }
 
+/** Pain-point text fed into AI / template when generating drafts from selection. */
+const GENERATION_PAIN_POINT =
+  "Excess motors, scrap, surplus gear, warehouse cleanouts after upgrades.";
+
+function specificityHint(mode: BatchSpecificityMode, n: number): string {
+  switch (mode) {
+    case "broadcast":
+      return `${n} recipients — using a broad email that fits everyone at once (${BROADCAST_RECIPIENT_THRESHOLD}+ recipients always does this). No company names.`;
+    case "shared_niche":
+      return `${n} recipients — same equipment focus and area on every row; the draft can be more specific to that niche (still no individual company names).`;
+    case "mixed_small":
+      return `${n} recipients — mixed trades or geography in this batch; wording stays moderately general so it still reads OK for everyone.`;
+    default:
+      return `One recipient — a tighter, more personalized draft is OK when it fits.`;
+  }
+}
+
 export default function SendEmailsPage() {
   const { leads, refresh, dataSource } = useLeads();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -80,6 +102,19 @@ export default function SendEmailsPage() {
     [leads]
   );
 
+  const generationFromSelection = useMemo(() => {
+    const ids = Array.from(selected);
+    if (ids.length > 0) {
+      const sel = ids
+        .map((id) => leads.find((l) => l.id === id))
+        .filter((l): l is Lead => Boolean(l));
+      return deriveBatchGenerationInputs(sel, GENERATION_PAIN_POINT);
+    }
+    const fallback = withEmail[0];
+    if (!fallback) return null;
+    return deriveBatchGenerationInputs([fallback], GENERATION_PAIN_POINT);
+  }, [selected, leads, withEmail]);
+
   function toggle(id: string) {
     setSelected((prev) => {
       const n = new Set(prev);
@@ -95,8 +130,13 @@ export default function SendEmailsPage() {
 
   async function generateFromSelection() {
     const ids = Array.from(selected);
-    const seed = ids.length ? leads.find((l) => l.id === ids[0]) : withEmail[0];
-    if (!seed) {
+    const selectedLeads =
+      ids.length > 0
+        ? ids.map((id) => leads.find((l) => l.id === id)).filter((l): l is Lead => Boolean(l))
+        : [];
+    const seeds = selectedLeads.length > 0 ? selectedLeads : withEmail.slice(0, 1);
+    const inputs = deriveBatchGenerationInputs(seeds, GENERATION_PAIN_POINT);
+    if (!inputs) {
       setError("Select at least one lead with an email.");
       return;
     }
@@ -107,12 +147,7 @@ export default function SendEmailsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          industry: seed.target_industry || seed.industry || "Industrial services",
-          equipment_type: seed.equipment_type || "Industrial equipment",
-          state: seed.state,
-          company_name: seed.company_name,
-          pain_point:
-            "Excess motors, scrap, surplus gear, warehouse cleanouts after upgrades.",
+          ...inputs,
           include_followups: false,
         }),
       });
@@ -283,6 +318,20 @@ export default function SendEmailsPage() {
               {genLoading ? "Generating…" : "Generate draft"}
             </button>
           </div>
+          {generationFromSelection ? (
+            <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)]/50 px-3 py-2.5 text-xs text-[var(--color-body-muted)] leading-relaxed">
+              <span className="font-semibold text-[var(--color-heading)]">Draft mode: </span>
+              {specificityHint(generationFromSelection.specificity_mode, generationFromSelection.recipient_count)}{" "}
+              {generationFromSelection.selection_notes ? (
+                <span className="block mt-1 text-[var(--color-muted)]">{generationFromSelection.selection_notes}</span>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-[11px] text-zinc-600 leading-snug">
+              Pick recipients for accurate draft mode — or leave none selected and Generate uses your first mailable lead only.
+              Large batches ({BROADCAST_RECIPIENT_THRESHOLD}+) get broad copy; a few leads in the same niche can be tighter.
+            </p>
+          )}
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-400">Subject</span>
             <input
