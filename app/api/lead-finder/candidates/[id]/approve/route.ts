@@ -17,7 +17,16 @@ export async function POST(_request: Request, ctx: Ctx) {
   } catch (e) {
     if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
     const msg = e instanceof Error ? e.message : "approval failed";
-    const status = msg === "candidate not found" ? 404 : 500;
-    return NextResponse.json({ error: msg }, { status });
+    const friendly =
+      msg === "EMAIL_REQUIRED_FOR_APPROVAL"
+        ? "Lead Finder requires a contact email found on the company website before approving."
+        : msg;
+    const status =
+      msg === "candidate not found"
+        ? 404
+        : msg === "EMAIL_REQUIRED_FOR_APPROVAL"
+          ? 400
+          : 500;
+    return NextResponse.json({ error: friendly }, { status });
   }
 }

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getGooglePlacesConfig, isOpenAiConfigured } from "@/lib/env/server";
 import { enrichFromWebsite } from "@/lib/enrichment/website";
+import { isLikelyContactEmail, pickFirstContactEmail } from "@/lib/lead-finder/email";
 import { searchGooglePlaces } from "@/lib/lead-finder/google-places";
 import { scoreLeadFinderCandidate } from "@/lib/lead-finder/scoring";
 import type {
@@ -18,8 +19,11 @@ import {
 
 /** Max category × state × city combinations per run (each combo = one Places request). */
 export const LEAD_FINDER_MAX_COMBINATIONS = 24;
-/** After dedupe, max rows we enrich + score to control latency and API cost. */
-const MAX_SCORE_POOL = 45;
+/**
+ * After dedupe, max rows we enrich + score per run (each row = Places + optional HTTP + scoring).
+ * Extra headroom — we drop rows without a usable scraped email before returning.
+ */
+const MAX_SCORE_POOL = 80;
 
 /** For "Select all" UX: max industries that fit under the cap with current geography. */
 export function maxSelectableIndustries(stateCount: number, citySlotCount: number): number {
@@ -99,7 +103,7 @@ async function enrichAndScore(
       enrichment_summary = enriched.company_summary;
       enrichment_source_url = enriched.source_url;
       keywords = enriched.keywords;
-      email = enriched.public_emails?.[0] ?? "";
+      email = pickFirstContactEmail(enriched.public_emails);
     } catch {
       // Provider facts are still valid even if a site blocks or times out.
     }
@@ -176,6 +180,12 @@ export async function runLeadFinder(
     }
 
     let merged = dedupeTagged(tagged);
+    // Prefer businesses with websites so enrichment can scrape a contact email before we trim the pool.
+    merged.sort((a, b) => {
+      const aw = a.c.website?.trim() ? 1 : 0;
+      const bw = b.c.website?.trim() ? 1 : 0;
+      return bw - aw;
+    });
     if (merged.length > MAX_SCORE_POOL) {
       merged = merged.slice(0, MAX_SCORE_POOL);
     }
@@ -196,7 +206,8 @@ export async function runLeadFinder(
       c.asset_likelihood_score ?? c.score ?? Number.NEGATIVE_INFINITY;
 
     scored.sort((a, b) => sortScore(b) - sortScore(a));
-    const trimmed = scored.slice(0, normalized.count);
+    const withEmail = scored.filter((c) => isLikelyContactEmail(c.email));
+    const trimmed = withEmail.slice(0, normalized.count);
 
     const candidates = await insertLeadFinderCandidates(admin, run.id, trimmed);
     const finished = await finishLeadFinderRun(admin, run.id, {

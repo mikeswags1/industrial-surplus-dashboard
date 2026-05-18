@@ -7,10 +7,8 @@ import type {
 } from "@/lib/lead-finder/types";
 import { leadRowToLead, type LeadRow } from "@/lib/db/mappers";
 import { isLeadFinderStatewideCity } from "@/lib/lead-finder/city-mode";
-import {
-  leadFinderCandidateRowToCandidate,
-  leadFinderRunRowToRun,
-} from "@/lib/lead-finder/mappers";
+import { leadFinderCandidateRowToCandidate, leadFinderRunRowToRun } from "@/lib/lead-finder/mappers";
+import { isLikelyContactEmail } from "@/lib/lead-finder/email";
 import type { Lead } from "@/lib/types";
 
 function summarizeList(parts: string[], maxShown = 3): string {
@@ -193,6 +191,9 @@ export async function approveLeadFinderCandidate(
   if (candErr) throw new Error(candErr.message);
   if (!candidate) throw new Error("candidate not found");
   const c = candidate as LeadFinderCandidate;
+  if (!isLikelyContactEmail(c.email)) {
+    throw new Error("EMAIL_REQUIRED_FOR_APPROVAL");
+  }
   const { data: run, error: runErr } = await admin
     .from("lead_finder_runs")
     .select("equipment_type")
