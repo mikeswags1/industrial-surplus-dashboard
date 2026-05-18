@@ -5,7 +5,11 @@ import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
 import { dashboardFetch } from "@/lib/dashboard-fetch";
 import type { LeadFinderCityMode } from "@/lib/lead-finder/city-mode";
-import { LEAD_FINDER_MAX_COMBINATIONS } from "@/lib/lead-finder/engine";
+import {
+  LEAD_FINDER_MAX_COMBINATIONS,
+  maxSelectableIndustries,
+  maxSelectableStates,
+} from "@/lib/lead-finder/engine";
 import { LEAD_FINDER_TARGET_INDUSTRIES } from "@/lib/lead-finder/target-industries";
 import type {
   LeadFinderCandidate,
@@ -87,6 +91,7 @@ export default function LeadFinderPage() {
   const [error, setError] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const [addAllBusy, setAddAllBusy] = useState(false);
+  const [selectAllHint, setSelectAllHint] = useState<string | null>(null);
   const [cityMode, setCityMode] = useState<LeadFinderCityMode>("specific");
   const [stateFilter, setStateFilter] = useState("");
   const [industryFilter, setIndustryFilter] = useState("");
@@ -139,37 +144,62 @@ export default function LeadFinderPage() {
     runtime?.dataLayer === "supabase" && runtime?.googlePlaces === "ok";
 
   function toggleTargetIndustry(label: string) {
+    setSelectAllHint(null);
     setTargetIndustries((prev) =>
       prev.includes(label) ? prev.filter((x) => x !== label) : [...prev, label]
     );
   }
 
   function toggleStateSel(s: USState) {
+    setSelectAllHint(null);
     setSelectedStates((prev) =>
       prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
     );
   }
 
   function selectAllIndustries() {
-    setTargetIndustries(LEAD_FINDER_TARGET_INDUSTRIES.map((p) => p.label));
+    const cap = maxSelectableIndustries(selectedStates.length, citySlots);
+    const pool = filteredIndustries;
+    const picked = pool.slice(0, Math.min(pool.length, cap)).map((p) => p.label);
+    setTargetIndustries(picked);
+    if (picked.length < pool.length) {
+      setSelectAllHint(
+        `Only ${picked.length} of ${pool.length} categories fit the ${LEAD_FINDER_MAX_COMBINATIONS}-search limit with your current states and cities. Run another search for more.`
+      );
+    } else {
+      setSelectAllHint(null);
+    }
   }
 
   function clearIndustries() {
     setTargetIndustries([]);
+    setSelectAllHint(null);
   }
 
   function selectAllStates() {
-    setSelectedStates([...US_STATES]);
+    const cap = maxSelectableStates(targetIndustries.length, citySlots);
+    const pool = filteredStates.length ? filteredStates : US_STATES;
+    const picked = pool.slice(0, Math.min(pool.length, cap)) as USState[];
+    setSelectedStates(picked);
+    if (picked.length < pool.length) {
+      setSelectAllHint(
+        `Only ${picked.length} of ${pool.length} states fit the ${LEAD_FINDER_MAX_COMBINATIONS}-search limit with your current categories. Run another search or narrow industries.`
+      );
+    } else {
+      setSelectAllHint(null);
+    }
   }
 
   function clearStates() {
     setSelectedStates([]);
+    setSelectAllHint(null);
   }
 
   async function runSearch(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSelectAllHint(null);
     setResult(null);
     try {
       const res = await dashboardFetch("/api/lead-finder/runs", {
@@ -356,8 +386,12 @@ export default function LeadFinderPage() {
                   States · {selectedStates.length} selected
                 </span>
                 <span className="flex gap-1">
-                  <button type="button" onClick={selectAllStates} className="dash-btn-secondary py-1 px-2 text-xs min-h-0">
-                    All
+                  <button
+                    type="button"
+                    onClick={selectAllStates}
+                    className="dash-btn-secondary py-1 px-2 text-xs min-h-0"
+                  >
+                    All (up to limit)
                   </button>
                   <button type="button" onClick={clearStates} className="dash-btn-secondary py-1 px-2 text-xs min-h-0">
                     Clear
@@ -424,14 +458,14 @@ export default function LeadFinderPage() {
         <StepFrame
           step={2}
           title="Which industries?"
-          hint="Check the kinds of businesses you want. Narrow the list with search."
+          hint="Check the kinds of businesses you want. Each category × state × (city slot) is one Google search — we cap at 24 per run for speed and API cost. “Select all” only checks categories that still fit with your geography."
         >
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-sm font-bold text-[var(--color-heading)]">{targetIndustries.length} selected</span>
               <span className="flex gap-1">
                 <button type="button" onClick={selectAllIndustries} className="dash-btn-secondary py-1 px-2 text-xs min-h-0">
-                  Select all
+                  Select all (up to limit)
                 </button>
                 <button type="button" onClick={clearIndustries} className="dash-btn-secondary py-1 px-2 text-xs min-h-0">
                   Clear all
@@ -475,6 +509,11 @@ export default function LeadFinderPage() {
                 })
               )}
             </div>
+            {selectAllHint ? (
+              <p className="text-xs text-[var(--color-body-muted)] leading-relaxed mt-2 border-t border-[var(--color-border-subtle)] pt-3">
+                {selectAllHint}
+              </p>
+            ) : null}
           </div>
         </StepFrame>
 

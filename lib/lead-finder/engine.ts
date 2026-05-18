@@ -21,6 +21,18 @@ export const LEAD_FINDER_MAX_COMBINATIONS = 24;
 /** After dedupe, max rows we enrich + score to control latency and API cost. */
 const MAX_SCORE_POOL = 45;
 
+/** For "Select all" UX: max industries that fit under the cap with current geography. */
+export function maxSelectableIndustries(stateCount: number, citySlotCount: number): number {
+  const denom = Math.max(1, stateCount) * Math.max(1, citySlotCount);
+  return Math.max(1, Math.floor(LEAD_FINDER_MAX_COMBINATIONS / denom));
+}
+
+/** For "All" states: max states that fit under the cap with current categories. */
+export function maxSelectableStates(industryCount: number, citySlotCount: number): number {
+  const denom = Math.max(1, industryCount) * Math.max(1, citySlotCount);
+  return Math.max(1, Math.floor(LEAD_FINDER_MAX_COMBINATIONS / denom));
+}
+
 export function leadFinderSetup() {
   return {
     googlePlacesConfigured: Boolean(getGooglePlacesConfig()),

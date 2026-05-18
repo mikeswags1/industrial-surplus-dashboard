@@ -173,6 +173,20 @@ export async function POST(request: Request) {
   } catch (e) {
     if (isDatabaseNotConfiguredError(e)) return jsonDatabaseNotConfigured(e);
     const msg = e instanceof Error ? e.message : "Lead Finder failed";
+    if (
+      msg.includes("asset_likelihood_score") ||
+      msg.includes("schema cache")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Lead Finder database columns are missing. Open Supabase → SQL Editor, run migration `009_lead_finder_columns_repair.sql` from the project repo (or run `007_lead_finder_buy_side_columns_verify.sql`), then try again.",
+          code: "LEAD_FINDER_SCHEMA_OUTDATED",
+          setup,
+        },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ error: msg, setup }, { status: 500 });
   }
 }
