@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 import { EQUIPMENT_TYPES, US_STATES, type EquipmentType, type USState } from "@/lib/types";
 
 type GenBody = {
@@ -41,7 +42,7 @@ export default function EmailGeneratorPage() {
         pain_point: pain,
         include_followups: true,
       };
-      const res = await fetch("/api/generate-email", {
+      const res = await dashboardFetch("/api/generate-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

@@ -109,7 +109,17 @@ export async function insertLeadFinderCandidates(
     .select("*")
     .order("asset_likelihood_score", { ascending: false, nullsFirst: false })
     .order("score", { ascending: false, nullsFirst: false });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (
+      error.message.includes("asset_likelihood_score") ||
+      error.message.includes("schema cache")
+    ) {
+      throw new Error(
+        `${error.message} Run supabase/migrations/009_lead_finder_columns_repair.sql in Supabase SQL Editor if this column was never added.`
+      );
+    }
+    throw new Error(error.message);
+  }
   return ((data ?? []) as LeadFinderCandidateRow[]).map(
     leadFinderCandidateRowToCandidate
   );

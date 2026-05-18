@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 import {
   AD_ANGLE_PRESETS,
   EQUIPMENT_TYPES,
@@ -25,7 +26,7 @@ export default function AdScriptsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/generate-ads", {
+      const res = await dashboardFetch("/api/generate-ads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
