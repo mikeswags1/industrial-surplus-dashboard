@@ -40,6 +40,25 @@ function isUnconfiguredStatus(status: number) {
   return status === 503 || status === 501;
 }
 
+async function parseApiJson(res: Response): Promise<Record<string, unknown>> {
+  const t = await res.text();
+  try {
+    return t ? (JSON.parse(t) as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Middleware returns JSON 401 for /api/* without PIN cookie — redirect to access screen (avoids HTML redirect + JSON parse errors). */
+function redirectIfSiteAccessRequired(res: Response, json: Record<string, unknown>): boolean {
+  if (res.status !== 401 || json.code !== "SITE_ACCESS_REQUIRED") return false;
+  if (typeof window === "undefined") return false;
+  window.location.assign(
+    `/access?next=${encodeURIComponent(window.location.pathname + window.location.search)}`
+  );
+  return true;
+}
+
 export function LeadsProvider({ children }: { children: ReactNode }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [dataSource, setDataSource] = useState<LeadsDataSource>("loading");
@@ -47,12 +66,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     setBackendMessage(null);
-    const res = await fetch("/api/leads", { cache: "no-store" });
-    const json = (await res.json().catch(() => ({}))) as {
+    const res = await fetch("/api/leads", { cache: "no-store", credentials: "include" });
+    const json = (await parseApiJson(res)) as {
       leads?: Lead[];
       error?: string;
       message?: string;
+      code?: string;
     };
+
+    if (redirectIfSiteAccessRequired(res, json)) return;
 
     if (isUnconfiguredStatus(res.status)) {
       setDataSource("unconfigured");
@@ -83,16 +105,22 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       }
       const res = await fetch("/api/leads", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
+      const j = await parseApiJson(res);
+      if (redirectIfSiteAccessRequired(res, j)) return;
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to create lead");
+        throw new Error(
+          (j.message as string | undefined) ??
+            (j.error as string | undefined) ??
+            "Failed to create lead"
+        );
       }
       await refresh();
     },
-    [dataSource]
+    [dataSource, refresh]
   );
 
   const updateLead = useCallback(
@@ -102,16 +130,22 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       }
       const res = await fetch(`/api/leads/${id}`, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
+      const j = await parseApiJson(res);
+      if (redirectIfSiteAccessRequired(res, j)) return;
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to update lead");
+        throw new Error(
+          (j.message as string | undefined) ??
+            (j.error as string | undefined) ??
+            "Failed to update lead"
+        );
       }
       await refresh();
     },
-    [dataSource]
+    [dataSource, refresh]
   );
 
   const bulkSetStatus = useCallback(
@@ -122,12 +156,14 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       if (!ids.length) return;
       const res = await fetch("/api/leads/bulk-status", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids, status }),
       });
+      const j = await parseApiJson(res);
+      if (redirectIfSiteAccessRequired(res, j)) return;
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string }).error ?? "Bulk status failed");
+        throw new Error((j.error as string | undefined) ?? "Bulk status failed");
       }
       await refresh();
     },
@@ -141,12 +177,16 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       }
       const res = await fetch("/api/leads/import", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ csvText, tag }),
       });
-      const json = await res.json();
+      const json = await parseApiJson(res);
+      if (redirectIfSiteAccessRequired(res, json)) {
+        throw new Error("Redirecting to access screen.");
+      }
       if (!res.ok) {
-        throw new Error((json as { error?: string }).error ?? "Import failed");
+        throw new Error((json.error as string | undefined) ?? "Import failed");
       }
       await refresh();
       return json as {
@@ -161,10 +201,11 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   const enrichLead = useCallback(
     async (id: string) => {
       if (dataSource !== "remote") return;
-      const res = await fetch(`/api/leads/${id}/enrich`, { method: "POST" });
+      const res = await fetch(`/api/leads/${id}/enrich`, { method: "POST", credentials: "include" });
+      const j = await parseApiJson(res);
+      if (redirectIfSiteAccessRequired(res, j)) return;
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string }).error ?? "Enrich failed");
+        throw new Error((j.error as string | undefined) ?? "Enrich failed");
       }
       await refresh();
     },
@@ -176,10 +217,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       if (dataSource !== "remote") {
         throw new Error("Cannot delete leads until the database API is available.");
       }
-      const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/leads/${id}`, { method: "DELETE", credentials: "include" });
+      const j = await parseApiJson(res);
+      if (redirectIfSiteAccessRequired(res, j)) return;
       if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error((j as { error?: string; message?: string }).message ?? (j as { error?: string }).error ?? "Failed to delete lead");
+        throw new Error(
+          (j.message as string | undefined) ??
+            (j.error as string | undefined) ??
+            "Failed to delete lead"
+        );
       }
       await refresh();
     },

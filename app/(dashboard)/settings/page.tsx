@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { DashCard } from "@/components/dash-card";
 import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 import { isBlockedResendFromDomain } from "@/lib/email/resend-from-validation";
 
 function modeLabel(m: string) {
@@ -32,7 +33,7 @@ export default function SettingsPage() {
   const [gateExplicitlyDisabled, setGateExplicitlyDisabled] = useState(false);
 
   useEffect(() => {
-    void fetch("/api/access", { cache: "no-store" })
+    void dashboardFetch("/api/access", { cache: "no-store" })
       .then((r) => r.json())
       .then((j: { gateActive?: boolean; explicitlyDisabled?: boolean }) => {
         setGateActive(Boolean(j.gateActive));
@@ -48,7 +49,7 @@ export default function SettingsPage() {
     if (leadsMode !== "remote") return;
     setInboxLoading(true);
     setInboxErr(null);
-    void fetch("/api/inboxes", { cache: "no-store" })
+    void dashboardFetch("/api/inboxes", { cache: "no-store" })
       .then(async (r) => {
         const j = (await r.json()) as {
           inboxes?: { from_email: string; reply_to_email: string | null; display_name: string }[];
@@ -72,7 +73,7 @@ export default function SettingsPage() {
     setInboxErr(null);
     setInboxOk(null);
     try {
-      const res = await fetch("/api/inboxes", {
+      const res = await dashboardFetch("/api/inboxes", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -315,6 +316,10 @@ export default function SettingsPage() {
           <li>
             <code className="text-zinc-300">SITE_ACCESS_DISABLED</code> — set to{" "}
             <code className="text-zinc-300">1</code> to turn the gate off (local dev).
+          </li>
+          <li>
+            <code className="text-zinc-300">SITE_ACCESS_COOKIE_DOMAIN</code> — e.g.{" "}
+            <code className="text-zinc-300">.selectsurplususa.com</code> so the PIN works on every subdomain (dash / www).
           </li>
           <li>
             <code className="text-zinc-300">CANONICAL_HOST</code> — e.g.{" "}

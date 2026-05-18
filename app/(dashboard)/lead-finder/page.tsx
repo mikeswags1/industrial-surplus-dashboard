@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { PageHeader } from "@/components/page-header";
 import { useLeads } from "@/context/leads-context";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 import type { LeadFinderCityMode } from "@/lib/lead-finder/city-mode";
 import { LEAD_FINDER_MAX_COMBINATIONS } from "@/lib/lead-finder/engine";
 import { LEAD_FINDER_TARGET_INDUSTRIES } from "@/lib/lead-finder/target-industries";
@@ -91,7 +92,7 @@ export default function LeadFinderPage() {
   const [industryFilter, setIndustryFilter] = useState("");
 
   useEffect(() => {
-    void fetch("/api/config/runtime", { cache: "no-store" })
+    void dashboardFetch("/api/config/runtime", { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => setRuntime(j as RuntimeConfig))
       .catch(() => setRuntime(null));
@@ -171,7 +172,7 @@ export default function LeadFinderPage() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch("/api/lead-finder/runs", {
+      const res = await dashboardFetch("/api/lead-finder/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -211,7 +212,7 @@ export default function LeadFinderPage() {
     setAddAllBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/lead-finder/runs/${result.run.id}/approve-all`, {
+      const res = await dashboardFetch(`/api/lead-finder/runs/${result.run.id}/approve-all`, {
         method: "POST",
       });
       const json = await res.json().catch(() => ({}));
@@ -220,7 +221,7 @@ export default function LeadFinderPage() {
       }
       const j = json as { approved?: number; duplicate?: number; errors?: number };
       setError(null);
-      const refetch = await fetch(`/api/lead-finder/runs/${result.run.id}`, {
+      const refetch = await dashboardFetch(`/api/lead-finder/runs/${result.run.id}`, {
         cache: "no-store",
       });
       const pack = await refetch.json().catch(() => null);
@@ -242,7 +243,7 @@ export default function LeadFinderPage() {
     setApproving(candidateId);
     setError(null);
     try {
-      const res = await fetch(`/api/lead-finder/candidates/${candidateId}/approve`, {
+      const res = await dashboardFetch(`/api/lead-finder/candidates/${candidateId}/approve`, {
         method: "POST",
       });
       const json = await res.json().catch(() => ({}));

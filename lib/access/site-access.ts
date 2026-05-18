@@ -57,3 +57,23 @@ export function siteAccessCookieMatches(raw: string | undefined): boolean {
   if (!token || raw === undefined) return false;
   return timingSafeEqualStr(raw, token);
 }
+
+/** Optional `domain` (e.g. `.selectsurplususa.com`) so the gate works on every subdomain (dash / www). */
+export function getSiteAccessCookieSetOptions(maxAge: number): {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: "lax";
+  path: string;
+  maxAge: number;
+  domain?: string;
+} {
+  const domain = process.env.SITE_ACCESS_COOKIE_DOMAIN?.trim();
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge,
+    ...(domain ? { domain } : {}),
+  };
+}

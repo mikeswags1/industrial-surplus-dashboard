@@ -6,6 +6,7 @@ import { DashCard } from "@/components/dash-card";
 import { PageHeader } from "@/components/page-header";
 import type { Lead, LeadStatus } from "@/lib/types";
 import { useLeads } from "@/context/leads-context";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 
 function hasValidEmail(lead: Lead): boolean {
   const e = lead.email?.trim() ?? "";
@@ -35,7 +36,7 @@ export default function EmailTrackingPage() {
   const loadLogs = useCallback(async () => {
     setLoadErr(null);
     try {
-      const res = await fetch("/api/outreach-logs?limit=100", { cache: "no-store" });
+      const res = await dashboardFetch("/api/outreach-logs?limit=100", { cache: "no-store" });
       const json = (await res.json()) as { logs?: OutreachLog[]; error?: string };
       if (!res.ok) throw new Error(json.error ?? "Could not load activity");
       setLogs(Array.isArray(json.logs) ? json.logs : []);
@@ -49,7 +50,7 @@ export default function EmailTrackingPage() {
   }, [loadLogs]);
 
   useEffect(() => {
-    void fetch("/api/config/runtime", { cache: "no-store" })
+    void dashboardFetch("/api/config/runtime", { cache: "no-store" })
       .then(async (r) => {
         const j = (await r.json()) as {
           resendWebhook?: string;

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   SITE_ACCESS_COOKIE_MAX_AGE_SEC,
   SITE_ACCESS_COOKIE_NAME,
+  getSiteAccessCookieSetOptions,
   getSiteAccessExpectedCode,
   getSiteAccessSessionToken,
   isSiteAccessEnabled,
@@ -48,25 +49,14 @@ export async function POST(request: Request) {
   }
 
   const jar = await cookies();
-  jar.set(SITE_ACCESS_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SITE_ACCESS_COOKIE_MAX_AGE_SEC,
-  });
+  jar.set(SITE_ACCESS_COOKIE_NAME, token, getSiteAccessCookieSetOptions(SITE_ACCESS_COOKIE_MAX_AGE_SEC));
 
   return NextResponse.json({ ok: true });
 }
 
 export async function DELETE() {
   const jar = await cookies();
-  jar.set(SITE_ACCESS_COOKIE_NAME, "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
+  jar.set(SITE_ACCESS_COOKIE_NAME, "", getSiteAccessCookieSetOptions(0));
+
   return NextResponse.json({ ok: true });
 }

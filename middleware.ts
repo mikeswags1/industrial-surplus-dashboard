@@ -57,6 +57,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: "Site access required.", code: "SITE_ACCESS_REQUIRED" },
+      { status: 401 }
+    );
+  }
+
   const url = request.nextUrl.clone();
   url.pathname = "/access";
   url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);

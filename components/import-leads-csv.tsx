@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useLeads } from "@/context/leads-context";
 import { CSV_LEAD_HEADERS } from "@/lib/leads/csv";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 
 const TEMPLATE_CSV = `${CSV_LEAD_HEADERS.join(",")}\n`;
 
@@ -20,7 +21,7 @@ export function ImportLeadsCsv() {
       const text = await f.text();
       const tag = f.name.replace(/[^\w.-]/g, "_").slice(0, 64);
 
-      const previewRes = await fetch("/api/leads/import/preview", {
+      const previewRes = await dashboardFetch("/api/leads/import/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ csvText: text, tag }),

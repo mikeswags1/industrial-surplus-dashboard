@@ -10,6 +10,7 @@ import {
   deriveBatchGenerationInputs,
   type BatchSpecificityMode,
 } from "@/lib/email/batch-email-generation";
+import { dashboardFetch } from "@/lib/dashboard-fetch";
 
 type OutreachLog = {
   id: string;
@@ -83,7 +84,7 @@ export default function SendEmailsPage() {
   const [includeWebsiteLink, setIncludeWebsiteLink] = useState(true);
 
   const loadLogs = useCallback(async () => {
-    const res = await fetch("/api/outreach-logs?limit=30", { cache: "no-store" });
+    const res = await dashboardFetch("/api/outreach-logs?limit=30", { cache: "no-store" });
     const json = (await res.json()) as { logs?: OutreachLog[] };
     const rows = Array.isArray(json.logs) ? json.logs : [];
     // Outbound-focused UI: hide optional inbound audit rows from the dashboard.
@@ -143,7 +144,7 @@ export default function SendEmailsPage() {
     setGenLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/generate-email", {
+      const res = await dashboardFetch("/api/generate-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -184,7 +185,7 @@ export default function SendEmailsPage() {
 
     try {
       const { body: bodyOut, html } = appendWebsiteFooter(body, includeWebsiteLink);
-      const res = await fetch("/api/send-email/batch", {
+      const res = await dashboardFetch("/api/send-email/batch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
