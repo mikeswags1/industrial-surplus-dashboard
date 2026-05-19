@@ -4,6 +4,12 @@ import {
   BROADCAST_RECIPIENT_THRESHOLD,
   type BatchSpecificityMode,
 } from "@/lib/email/batch-email-generation";
+import {
+  buildEmailSubject,
+  isGenericEquipmentLabel,
+  normalizeEmailSubject,
+  type EmailSubjectContext,
+} from "@/lib/email/subject-line";
 
 type Body = {
   industry?: string;
@@ -46,7 +52,8 @@ function specificityInstructions(
       return `Batch mode (${recipient_count} recipients): ONE identical email goes to every recipient.
 Write broadly so it fits factories, warehouses, and trades across regions. NEVER name a recipient company or imply this email is only to them — use "Hi there," etc.
 Avoid hyper-specific subjects tied to one niche or one city unless all inputs clearly share them.
-The subject must scan well for diverse readers.`;
+The subject must scan well for diverse readers.
+Never put internal labels like "Mixed / other" in the subject — use plain language like "surplus industrial gear".`;
     case "shared_niche":
       return `Focused batch (${recipient_count} recipients): recipients share the same equipment/category lens and geography fields provided — you may speak specifically to that surplus niche and region.
 Still ONE shared letter: NEVER name one recipient company or its facilities. Prefer "Hi there," not a company name.`;
@@ -55,8 +62,18 @@ Still ONE shared letter: NEVER name one recipient company or its facilities. Pre
 Stay moderately general — surplus industrial equipment / warehouse assets framing — without pinning one odd specialty or town unless inputs are strongly aligned.
 Never name one recipient company.`;
     default:
-      return `Single-recipient outreach: if company_name is provided and usable, you may greet naturally (otherwise "Hi there,").`;
+      return `Single-recipient outreach: if company_name is provided and usable, you may greet naturally (otherwise "Hi there,").
+Subject: short, natural B2B line — e.g. "Quick question — surplus electrical gear (NJ)". Never use "unused Mixed / other" or raw CRM equipment enums.`;
   }
+}
+
+function subjectContext(b: Body, specificity_mode: BatchSpecificityMode): EmailSubjectContext {
+  return {
+    equipment_type: b.equipment_type,
+    industry: b.industry,
+    state: b.state,
+    specificity_mode,
+  };
 }
 
 function template(b: Body) {
@@ -64,8 +81,8 @@ function template(b: Body) {
   const industry = b.industry || "your industry";
   const equipment = b.equipment_type || "surplus equipment";
   const statePhrase = b.state ? ` in ${b.state}` : "";
-  const stateParen = b.state ? ` (${b.state})` : "";
   const pain = b.pain_point || "unused assets taking space";
+  const subCtx = subjectContext(b, specificity_mode);
 
   const companyRaw = (b.company_name || "").trim();
   const useCompany =
@@ -74,18 +91,7 @@ function template(b: Body) {
     companyRaw.toLowerCase() !== "your team";
   const greet = useCompany ? companyRaw : "there";
 
-  let subject: string;
-  if (specificity_mode === "broadcast") {
-    subject = b.state
-      ? `Quick question — surplus equipment${stateParen}`
-      : "Quick question — surplus equipment clearing";
-  } else if (specificity_mode === "shared_niche") {
-    subject = `Quick question — unused ${equipment}${stateParen}`;
-  } else if (specificity_mode === "mixed_small") {
-    subject = `Quick question — surplus gear${stateParen}`;
-  } else {
-    subject = `Quick question — unused ${equipment}${stateParen}`;
-  }
+  const subject = buildEmailSubject(subCtx);
 
   let bodyOut: string;
   if (specificity_mode === "broadcast") {
@@ -130,10 +136,16 @@ If timing is off, no problem — happy to reconnect another quarter.
 Best regards`;
   }
 
+  const followFocus =
+    subCtx.industry?.toLowerCase().includes("electrical")
+      ? "surplus electrical gear"
+      : isGenericEquipmentLabel(equipment)
+        ? "surplus equipment"
+        : equipment.toLowerCase();
   const follow1 =
     specificity_mode === "broadcast"
       ? "Circling back — still open to hearing about surplus loads you might want to move?"
-      : `Circling back — still open to a quick look at ${equipment.toLowerCase()} you might want to move?`;
+      : `Circling back — still open to a quick look at ${followFocus} you might want to move?`;
   const follow2 =
     "Last check-in — we coordinate pickup on agreed loads. Open to a short call this week?";
 
@@ -161,6 +173,8 @@ export async function POST(req: Request) {
 Tone: calm professional, one human talking to another — never salesy, never "get rich quick."
 Avoid in subjects and opening lines: cash, fast cash, guaranteed, act now, free money, URGENT, !!!, and "fast quote."
 Prefer: short subject and plain-spoken body.
+Subject examples: "Quick question — surplus electrical gear (NJ)", "Quick question — surplus forklifts (TX)".
+Never use awkward internal labels (e.g. "Mixed / other", "Liquidation inventory") verbatim in the subject.
 
 ${specificityInstructions(meta.recipient_count, meta.specificity_mode)}
 
@@ -201,8 +215,9 @@ Keep body under 160 words. No HTML.`;
       follow_up_2?: string;
     };
     const t = template(body);
+    const subCtx = subjectContext(body, meta.specificity_mode);
     return NextResponse.json({
-      subject: parsed.subject || t.subject,
+      subject: normalizeEmailSubject(parsed.subject, subCtx),
       body: parsed.body || t.body,
       follow_up_1: parsed.follow_up_1 || t.follow_up_1,
       follow_up_2: parsed.follow_up_2 || t.follow_up_2,
