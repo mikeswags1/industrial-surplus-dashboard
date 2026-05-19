@@ -698,8 +698,16 @@ export default function LeadFinderPage() {
           </div>
           {result ? (
             <div className="flex flex-wrap items-center gap-2 justify-end">
-              <span className="text-xs font-semibold text-[var(--color-muted)] whitespace-nowrap">
-                {result.run.result_count} found · {result.run.status}
+              <span className="text-xs font-semibold text-[var(--color-muted)] whitespace-nowrap text-right leading-relaxed">
+                {result.run.result_count} leads ·{" "}
+                {result.run.places_text_search_calls != null ? (
+                  <span title="Billable-ish: one Google Places Text Search per combination">
+                    {result.run.places_text_search_calls} Places searches
+                  </span>
+                ) : (
+                  <span className="text-[var(--color-muted)]">Places searches unknown (older run)</span>
+                )}{" "}
+                · {result.run.status}
               </span>
               <button
                 type="button"

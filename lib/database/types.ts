@@ -54,6 +54,8 @@ export type LeadFinderRunRow = {
   industry: string;
   equipment_type: string;
   requested_count: number;
+  /** Google Places Text Search (New) calls for this run (null on rows created before rollout). */
+  places_text_search_calls: number | null;
   result_count: number;
   approved_count: number;
   error: string | null;

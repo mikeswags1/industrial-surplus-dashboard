@@ -28,7 +28,8 @@ function summarizeRunCities(cities: string[], maxShown = 3): string {
 
 export async function createLeadFinderRun(
   admin: SupabaseClient,
-  input: LeadFinderSearchInput
+  input: LeadFinderSearchInput,
+  placesTextSearchCalls: number
 ): Promise<LeadFinderRunRow> {
   const { data, error } = await admin
     .from("lead_finder_runs")
@@ -39,6 +40,7 @@ export async function createLeadFinderRun(
       city: summarizeRunCities(input.cities),
       industry: summarizeList(input.target_industries),
       equipment_type: input.equipment_type,
+      places_text_search_calls: placesTextSearchCalls,
       requested_count: input.count,
     })
     .select("*")

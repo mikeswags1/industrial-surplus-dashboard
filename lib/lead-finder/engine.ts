@@ -161,7 +161,7 @@ export async function runLeadFinder(
     );
   }
 
-  const run = await createLeadFinderRun(admin, normalized);
+  const run = await createLeadFinderRun(admin, normalized, combos.length);
   try {
     const perComboPlaces = Math.min(
       20,
