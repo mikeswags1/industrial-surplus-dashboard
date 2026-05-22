@@ -13,7 +13,7 @@ const STEPS = [
   {
     n: 2,
     title: "Project Signals",
-    body: "Track data centers, shutdowns, construction, and upgrades — project-based surplus opportunities with source links.",
+    body: "Scan news for data centers, shutdowns, demolition, and upgrades — auto-saved with source links and scores.",
     href: "/project-signals",
     cta: "Project Signals",
   },

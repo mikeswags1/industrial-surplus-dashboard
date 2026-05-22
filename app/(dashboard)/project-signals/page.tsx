@@ -46,6 +46,14 @@ export default function ProjectSignalsPage() {
   const [active, setActive] = useState<ProjectSignalLead | null>(null);
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverResult, setDiscoverResult] = useState<{
+    inserted: number;
+    candidates_found: number;
+    skipped_duplicate: number;
+    errors: string[];
+    sample_titles: string[];
+  } | null>(null);
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -156,16 +164,71 @@ export default function ProjectSignalsPage() {
     window.open(`/api/project-signals/export${qs}`, "_blank");
   }
 
+  async function runDiscovery() {
+    setDiscovering(true);
+    setError(null);
+    setDiscoverResult(null);
+    try {
+      const res = await dashboardFetch("/api/project-signals/discover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: filters.state || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Discovery failed");
+      setDiscoverResult(json);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Discovery failed");
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Project Signals"
-        description="Track construction, shutdowns, upgrades, and other project-based surplus opportunities — not Google Maps POI leads. Add manually, import CSV, or connect automated feeds later."
+        description="Automatically discovers construction, shutdown, upgrade, and data-center project signals from public news — scored and saved with source links. Manual entry is only a fallback."
       >
-        <button type="button" onClick={openCreate} className="dash-btn-primary">
-          Add signal
+        <button
+          type="button"
+          disabled={discovering}
+          onClick={() => void runDiscovery()}
+          className="dash-btn-primary disabled:opacity-50"
+        >
+          {discovering ? "Scanning news…" : "Run discovery scan"}
         </button>
       </PageHeader>
+
+      <DashCard className="p-4 sm:p-5 space-y-3">
+        <p className="text-sm text-[var(--color-body-muted)] leading-relaxed">
+          Discovery scans <strong className="text-[var(--color-heading)]">Google News</strong> for the last ~3 months
+          across {10} surplus-relevant project categories (data centers, shutdowns, demolition, utility upgrades, etc.).
+          Each hit must include a real <strong className="text-[var(--color-heading)]">article URL</strong> — nothing is
+          fabricated. Optional: pick a <strong className="text-[var(--color-heading)]">State</strong> filter below before
+          scanning to narrow geography.
+        </p>
+        {discoverResult ? (
+          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.08] px-4 py-3 text-sm text-[var(--color-body)] space-y-1">
+            <p>
+              <strong className="text-[var(--color-heading)]">{discoverResult.inserted}</strong> new signal
+              {discoverResult.inserted === 1 ? "" : "s"} added · {discoverResult.candidates_found} candidates ·{" "}
+              {discoverResult.skipped_duplicate} duplicates skipped
+            </p>
+            {discoverResult.sample_titles.length ? (
+              <ul className="text-xs text-[var(--color-body-muted)] list-disc pl-4 space-y-0.5">
+                {discoverResult.sample_titles.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            ) : null}
+            {discoverResult.errors.length ? (
+              <p className="text-xs text-amber-300/90">{discoverResult.errors.slice(0, 3).join(" · ")}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </DashCard>
 
       <DashCard className="p-4 sm:p-5 space-y-4">
         <div className="flex flex-wrap items-end gap-3">
@@ -285,9 +348,12 @@ export default function ProjectSignalsPage() {
 
       <details className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-5 shadow-[var(--shadow-card)]">
         <summary className="cursor-pointer list-none text-sm font-medium text-[var(--color-heading)]">
-          Import from CSV
+          Manual fallback — add one or import CSV
         </summary>
-        <div className="mt-4 border-t border-[var(--color-border-subtle)] pt-4">
+        <div className="mt-4 space-y-4 border-t border-[var(--color-border-subtle)] pt-4">
+          <button type="button" onClick={openCreate} className="dash-btn-secondary text-sm">
+            Add signal manually
+          </button>
           <ImportProjectSignalsCsv onImported={() => void load()} />
         </div>
       </details>
@@ -323,7 +389,8 @@ export default function ProjectSignalsPage() {
             ) : leads.length === 0 ? (
               <tr>
                 <td colSpan={9} className="px-4 py-10 text-center text-[var(--color-body-muted)]">
-                  No project signals yet. Add one manually or import a CSV with a source URL for each real row.
+                  No project signals yet. Click <strong className="text-[var(--color-heading)]">Run discovery scan</strong>{" "}
+                  to pull recent news hits with source links — or use manual fallback below.
                 </td>
               </tr>
             ) : (
