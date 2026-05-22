@@ -1,7 +1,7 @@
 import type { Lead } from "@/lib/types";
 
 /** At or above this count, one email must fit everyone → generic broadcast tone. */
-export const BROADCAST_RECIPIENT_THRESHOLD = 10;
+export const BROADCAST_RECIPIENT_THRESHOLD = 15;
 
 export type BatchSpecificityMode =
   | "single_recipient"
@@ -57,10 +57,10 @@ export function deriveBatchGenerationInputs(
   let specificity_mode: BatchSpecificityMode;
   if (n === 1) {
     specificity_mode = "single_recipient";
-  } else if (n >= BROADCAST_RECIPIENT_THRESHOLD) {
-    specificity_mode = "broadcast";
   } else if (uniqEquip.size <= 1 && uniqStates.size <= 1) {
     specificity_mode = "shared_niche";
+  } else if (n >= BROADCAST_RECIPIENT_THRESHOLD) {
+    specificity_mode = "broadcast";
   } else {
     specificity_mode = "mixed_small";
   }

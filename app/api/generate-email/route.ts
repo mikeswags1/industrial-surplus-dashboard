@@ -53,10 +53,12 @@ function specificityInstructions(
 Write broadly so it fits factories, warehouses, and trades across regions. NEVER name a recipient company or imply this email is only to them — use "Hi there," etc.
 Avoid hyper-specific subjects tied to one niche or one city unless all inputs clearly share them.
 The subject must scan well for diverse readers.
-Never put internal labels like "Mixed / other" in the subject — use plain language like "surplus industrial gear".`;
+Never put internal labels like "Mixed / other" in the subject — use plain language like "surplus industrial gear".
+Make it concrete enough to feel useful: mention buying surplus, pickup/removal coordination, and that a few photos or a short list is enough to start.`;
     case "shared_niche":
       return `Focused batch (${recipient_count} recipients): recipients share the same equipment/category lens and geography fields provided — you may speak specifically to that surplus niche and region.
-Still ONE shared letter: NEVER name one recipient company or its facilities. Prefer "Hi there," not a company name.`;
+Still ONE shared letter: NEVER name one recipient company or its facilities. Prefer "Hi there," not a company name.
+Use the niche context to sound more relevant, but avoid pretending we know what assets they currently have.`;
     case "mixed_small":
       return `Small mixed batch (${recipient_count} recipients): equipment or geography varies across rows.
 Stay moderately general — surplus industrial equipment / warehouse assets framing — without pinning one odd specialty or town unless inputs are strongly aligned.
@@ -97,43 +99,47 @@ function template(b: Body) {
   if (specificity_mode === "broadcast") {
     bodyOut = `Hi ${greet},
 
-We help industrial teams clear surplus equipment — forklifts, electrical gear, valves, machinery, scrap metal, and warehouse inventory — when loads need to move without turning it into a project.
+I work with Select Surplus. We buy and remove surplus industrial equipment - forklifts, electrical gear, valves, machinery, scrap metal, and warehouse inventory - when it is taking up space or left over from a job.
 
-If idle assets pile up occasionally, we're straightforward to engage.
+If you ever have material to move, a few photos or a quick list is enough for us to tell you if it is a fit. We can coordinate pickup and keep the process straightforward.
 
-If timing's wrong, feel free to ignore.
+If there is nothing sitting around right now, no problem.
 
-Best regards`;
+Best,
+Jake`;
   } else if (specificity_mode === "shared_niche") {
     bodyOut = `Hi ${greet},
 
-We help companies clear surplus industrial equipment — forklifts, electrical, valves, machinery, scrap, and warehouse inventory${statePhrase}. If you have idle assets or end-of-line units, we can usually coordinate pickup pragmatically.
+I work with Select Surplus. We buy and remove surplus industrial equipment${statePhrase}, especially the kind of material that gets left after jobs, upgrades, cleanouts, or yard/warehouse reorganization.
 
-Given your lane (${industry}), we often hear about ${pain}.
+For ${industry}, that can mean ${pain}. If anything like that is sitting around, a few photos or a short list is enough for us to take a look and give a straight answer.
 
-If timing is off, no problem — happy to reconnect another quarter.
+If timing is off, no worries.
 
-Best regards`;
+Best,
+Jake`;
   } else if (specificity_mode === "mixed_small") {
     bodyOut = `Hi ${greet},
 
-We buy and coordinate pickup on surplus industrial equipment — forklifts, electrical, valves, machinery, scrap, and warehouse inventory${statePhrase}. Useful when mixed loads need to move without fuss.
+I work with Select Surplus. We buy surplus industrial equipment and coordinate pickup when companies have extra gear, scrap, or warehouse inventory that needs to move.
 
-Teams in ${industry} sometimes sit on ${pain}; we keep it simple.
+If you ever run into ${pain}, send a few photos or a quick list and we can let you know what is worth pursuing.
 
-If not a fit now, no worries.
+If there is nothing current, no problem.
 
-Best regards`;
+Best,
+Jake`;
   } else {
     bodyOut = `Hi ${greet},
 
-We help companies clear surplus industrial equipment — forklifts, electrical, valves, machinery, scrap, and warehouse inventory${statePhrase}. If you have idle assets or end-of-line units, we can usually turn them around with straightforward pickup.
+I work with Select Surplus. We buy and remove surplus industrial equipment${statePhrase} - things like electrical gear, machinery, forklifts, scrap metal, and warehouse inventory.
 
-Worth noting: ${industry}. We often hear about ${pain}.
+I came across ${useCompany ? companyRaw : "your team"} and thought it might be worth asking: if you ever have ${pain}, a few photos or a short list is enough for us to take a look.
 
-If timing is off, no problem — happy to reconnect another quarter.
+If nothing is available right now, no worries.
 
-Best regards`;
+Best,
+Jake`;
   }
 
   const followFocus =
@@ -175,11 +181,17 @@ Avoid in subjects and opening lines: cash, fast cash, guaranteed, act now, free 
 Prefer: short subject and plain-spoken body.
 Subject examples: "Quick question — surplus electrical gear (NJ)", "Quick question — surplus forklifts (TX)".
 Never use awkward internal labels (e.g. "Mixed / other", "Liquidation inventory") verbatim in the subject.
+Write like Jake is asking a practical business question, not pitching a software product.
+The body should include:
+- who we are: Select Surplus buys/removes surplus industrial assets
+- what to send: a few photos or a short list
+- low-pressure close: if nothing current, no problem
+Do not overclaim, invent knowledge about their facility, or imply urgency.
 
 ${specificityInstructions(meta.recipient_count, meta.specificity_mode)}
 
 Output strict JSON with keys: subject (string), body (string), follow_up_1 (string), follow_up_2 (string).
-Keep body under 160 words. No HTML.`;
+Keep body between 75 and 130 words. No HTML.`;
 
     const user = JSON.stringify({
       recipient_count: meta.recipient_count,

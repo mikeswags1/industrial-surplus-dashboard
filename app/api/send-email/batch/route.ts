@@ -8,6 +8,13 @@ import {
 } from "@/lib/repositories/leads.repository";
 import { leadRowToLead, type LeadRow } from "@/lib/db/mappers";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
+import { assertLeadMailable } from "@/lib/outbound/suppression";
+import {
+  appendUnsubscribeHtml,
+  appendUnsubscribeText,
+  buildUnsubscribeUrl,
+  unsubscribeHeaders,
+} from "@/lib/outbound/unsubscribe";
 import { requireSupabaseAdmin } from "@/lib/supabase/admin";
 
 function escapeHtml(s: string) {
@@ -106,6 +113,16 @@ export async function POST(request: Request) {
       }
     }
 
+    const mailable = await assertLeadMailable(admin, {
+      leadId,
+      email: to,
+      status: lead.status,
+    });
+    if (!mailable.ok) {
+      results.push({ leadId, ok: false, skipped: "suppressed", error: mailable.reason });
+      continue;
+    }
+
     let identity: { from: string; replyTo: string | null };
     try {
       identity = await resolveOutboundIdentity(admin, lead.organization_id ?? null);
@@ -115,13 +132,21 @@ export async function POST(request: Request) {
       continue;
     }
 
+    const unsubscribeUrl = buildUnsubscribeUrl(request, { leadId, email: to });
+    const htmlWithUnsubscribe = appendUnsubscribeHtml(html, unsubscribeUrl);
+    const textWithUnsubscribe = appendUnsubscribeText(
+      textBody || html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      unsubscribeUrl
+    );
+
     const sent = await sendWithResend({
       to,
       subject,
-      html,
-      text: textBody || html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      html: htmlWithUnsubscribe,
+      text: textWithUnsubscribe,
       from: identity.from,
       replyTo: identity.replyTo,
+      headers: unsubscribeHeaders(unsubscribeUrl),
     });
 
     if (!sent.ok) {
@@ -136,7 +161,7 @@ export async function POST(request: Request) {
       to_email: to,
       from_email: identity.from,
       subject,
-      body_preview: html.replace(/<[^>]+>/g, " ").slice(0, 240),
+      body_preview: htmlWithUnsubscribe.replace(/<[^>]+>/g, " ").slice(0, 240),
       lead_id: leadId,
       meta: { batch: true },
     });

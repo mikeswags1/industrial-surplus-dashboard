@@ -3,6 +3,7 @@ import { resolveOutboundIdentity } from "@/lib/repositories/inboxes.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
 import { getResendConfig } from "@/lib/env/server";
+import { assertLeadMailable } from "@/lib/outbound/suppression";
 
 type Job = {
   id: string;
@@ -74,6 +75,19 @@ export async function processCampaignQueueOnce(limit = 5): Promise<{
       await admin
         .from("campaign_send_queue")
         .update({ status: "failed", last_error: "Lead has no email" })
+        .eq("id", job.id);
+      continue;
+    }
+
+    const mailable = await assertLeadMailable(admin, {
+      leadId: job.lead_id,
+      email,
+      status: typeof lead.status === "string" ? lead.status : null,
+    });
+    if (!mailable.ok) {
+      await admin
+        .from("campaign_send_queue")
+        .update({ status: "cancelled", last_error: mailable.reason })
         .eq("id", job.id);
       continue;
     }

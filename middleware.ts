@@ -41,6 +41,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname === "/access" ||
     pathname.startsWith("/api/access") ||
+    pathname.startsWith("/api/unsubscribe") ||
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/api/cron") ||
     pathname === "/api/health"

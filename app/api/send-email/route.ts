@@ -5,6 +5,13 @@ import { resolveOutboundIdentity } from "@/lib/repositories/inboxes.repository";
 import { countSendEventsForLead } from "@/lib/repositories/leads.repository";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { assertSendRateLimitOk } from "@/lib/outbound/rate-limit";
+import { assertLeadMailable } from "@/lib/outbound/suppression";
+import {
+  appendUnsubscribeHtml,
+  appendUnsubscribeText,
+  buildUnsubscribeUrl,
+  unsubscribeHeaders,
+} from "@/lib/outbound/unsubscribe";
 
 type Body = {
   to: string;
@@ -56,6 +63,29 @@ export async function POST(request: Request) {
     }
   }
 
+  if (admin) {
+    let status: string | null = null;
+    if (body.leadId) {
+      const { data } = await admin
+        .from("leads")
+        .select("status")
+        .eq("id", body.leadId)
+        .maybeSingle();
+      status = (data?.status as string | undefined) ?? null;
+    }
+    const mailable = await assertLeadMailable(admin, {
+      leadId: body.leadId,
+      email: to,
+      status,
+    });
+    if (!mailable.ok) {
+      return NextResponse.json(
+        { error: `Suppressed recipient: ${mailable.reason}`, code: "SUPPRESSED_RECIPIENT" },
+        { status: 409 }
+      );
+    }
+  }
+
   const rl = await assertSendRateLimitOk();
   if (!rl.ok) {
     return NextResponse.json({ error: rl.message }, { status: 429 });
@@ -90,13 +120,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const unsubscribeUrl = buildUnsubscribeUrl(request, { leadId: body.leadId, email: to });
+  const htmlWithUnsubscribe = appendUnsubscribeHtml(body.html, unsubscribeUrl);
+  const textWithUnsubscribe = body.text
+    ? appendUnsubscribeText(body.text, unsubscribeUrl)
+    : undefined;
+
   const sent = await sendWithResend({
     to,
     subject: body.subject,
-    html: body.html,
-    text: body.text,
+    html: htmlWithUnsubscribe,
+    text: textWithUnsubscribe,
     from: identity.from,
     replyTo: identity.replyTo,
+    headers: unsubscribeHeaders(unsubscribeUrl),
   });
   if (!sent.ok) {
     return NextResponse.json({ error: sent.error }, { status: 502 });
@@ -110,7 +147,7 @@ export async function POST(request: Request) {
       to_email: to,
       from_email: identity.from,
       subject: body.subject,
-      body_preview: body.html.replace(/<[^>]+>/g, " ").slice(0, 240),
+      body_preview: htmlWithUnsubscribe.replace(/<[^>]+>/g, " ").slice(0, 240),
       lead_id: body.leadId ?? null,
       campaign_id: body.campaignId ?? null,
       meta: {},

@@ -11,6 +11,8 @@ export type SendEmailInput = {
   from?: string;
   /** Optional Reply-To header (verified address recommended). */
   replyTo?: string | null;
+  /** Provider headers such as List-Unsubscribe. */
+  headers?: Record<string, string>;
 };
 
 export type SendEmailResult =
@@ -46,6 +48,7 @@ export async function sendWithResend(input: SendEmailInput): Promise<SendEmailRe
     html: input.html,
     text: input.text,
     ...(replyTo ? { reply_to: replyTo } : {}),
+    ...(input.headers ? { headers: input.headers } : {}),
   });
 
   if (error) return { ok: false, error: error.message };
