@@ -163,3 +163,42 @@ export type TaskRow = {
   created_at: string;
   updated_at: string;
 };
+
+export type ProjectSignalLeadRow = {
+  id: string;
+  organization_id: string;
+  project_name: string;
+  project_type: string;
+  source_type:
+    | "manual"
+    | "csv_import"
+    | "demo"
+    | "construction_permit"
+    | "planning_board"
+    | "zoning"
+    | "news"
+    | "contractor_page"
+    | "utility_filing"
+    | "job_post"
+    | "company_announcement";
+  location: string | null;
+  state: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  phone: string | null;
+  website: string | null;
+  source_url: string | null;
+  project_status: string;
+  estimated_value: number | null;
+  estimated_start_date: string | null;
+  estimated_completion_date: string | null;
+  equipment_opportunity: string | null;
+  confidence_score: number;
+  lead_score: number;
+  reason_flagged: string | null;
+  notes: string | null;
+  lead_status: "New" | "Contacted" | "Interested" | "Follow Up Later" | "Not Interested";
+  is_demo: boolean;
+  created_at: string;
+  updated_at: string;
+};

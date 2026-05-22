@@ -12,27 +12,34 @@ const STEPS = [
   },
   {
     n: 2,
+    title: "Project Signals",
+    body: "Track data centers, shutdowns, construction, and upgrades — project-based surplus opportunities with source links.",
+    href: "/project-signals",
+    cta: "Project Signals",
+  },
+  {
+    n: 3,
     title: "Lead list",
     body: "Review saved prospects, update status, notes, or remove rows you don’t need.",
     href: "/leads",
     cta: "Open list",
   },
   {
-    n: 3,
+    n: 4,
     title: "Send email",
     body: "Pick recipients, write or generate a message, send. Replies stay in your Gmail.",
     href: "/send-emails",
     cta: "Send email",
   },
   {
-    n: 4,
+    n: 5,
     title: "Sent mail",
     body: "See who was emailed from here and any delivery issues (bounces, complaints).",
     href: "/email-tracking",
     cta: "View log",
   },
   {
-    n: 5,
+    n: 6,
     title: "Settings",
     body: "Set your From domain (verified in Resend) and Reply-To where you read mail.",
     href: "/settings",
@@ -103,7 +110,7 @@ export default function HomePage() {
             Your workflow
           </h2>
           <span className="text-xs font-medium uppercase tracking-wider text-[var(--color-muted)]">
-            5 steps · do in order the first few times
+            6 steps · do in order the first few times
           </span>
         </div>
 

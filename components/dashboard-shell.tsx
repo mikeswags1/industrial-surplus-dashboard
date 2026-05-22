@@ -10,6 +10,7 @@ const BRAND_NAME = "Select Surplus LLC";
 const NAV_LINKS: { href: string; label: string }[] = [
   { href: "/", label: "Home" },
   { href: "/lead-finder", label: "Find leads" },
+  { href: "/project-signals", label: "Project Signals" },
   { href: "/leads", label: "Leads" },
   { href: "/send-emails", label: "Send email" },
   { href: "/email-tracking", label: "Sent mail" },
