@@ -26,25 +26,45 @@ function summarizeRunCities(cities: string[], maxShown = 3): string {
   return summarizeList(u, maxShown);
 }
 
+function isMissingColumnError(error: { message?: string } | null | undefined, columns: string[]): boolean {
+  const message = error?.message ?? "";
+  return (
+    message.includes("schema cache") ||
+    columns.some((column) => message.includes(column))
+  );
+}
+
 export async function createLeadFinderRun(
   admin: SupabaseClient,
   input: LeadFinderSearchInput,
   placesTextSearchCalls: number
 ): Promise<LeadFinderRunRow> {
+  const row = {
+    provider: "google_places",
+    status: "running",
+    state: summarizeList(input.states),
+    city: summarizeRunCities(input.cities),
+    industry: summarizeList(input.target_industries),
+    equipment_type: input.equipment_type,
+    places_text_search_calls: placesTextSearchCalls,
+    requested_count: input.count,
+  };
+
   const { data, error } = await admin
     .from("lead_finder_runs")
-    .insert({
-      provider: "google_places",
-      status: "running",
-      state: summarizeList(input.states),
-      city: summarizeRunCities(input.cities),
-      industry: summarizeList(input.target_industries),
-      equipment_type: input.equipment_type,
-      places_text_search_calls: placesTextSearchCalls,
-      requested_count: input.count,
-    })
+    .insert(row)
     .select("*")
     .single();
+  if (error && isMissingColumnError(error, ["places_text_search_calls"])) {
+    const { places_text_search_calls: _unused, ...legacyRow } = row;
+    const retry = await admin
+      .from("lead_finder_runs")
+      .insert(legacyRow)
+      .select("*")
+      .single();
+    if (retry.error) throw new Error(retry.error.message);
+    return leadFinderRunRowToRun(retry.data as LeadFinderRunRow);
+  }
   if (error) throw new Error(error.message);
   return leadFinderRunRowToRun(data as LeadFinderRunRow);
 }
@@ -110,12 +130,25 @@ export async function insertLeadFinderCandidates(
     .order("asset_likelihood_score", { ascending: false, nullsFirst: false })
     .order("score", { ascending: false, nullsFirst: false });
   if (error) {
-    if (
-      error.message.includes("asset_likelihood_score") ||
-      error.message.includes("schema cache")
-    ) {
-      throw new Error(
-        `${error.message} Run supabase/migrations/009_lead_finder_columns_repair.sql in Supabase SQL Editor if this column was never added.`
+    if (isMissingColumnError(error, ["target_industry", "asset_likelihood_score", "likely_asset_types", "outreach_angle", "reason_selected"])) {
+      const legacyRows = rows.map(
+        ({
+          target_industry: _targetIndustry,
+          asset_likelihood_score: _assetLikelihoodScore,
+          likely_asset_types: _likelyAssetTypes,
+          outreach_angle: _outreachAngle,
+          reason_selected: _reasonSelected,
+          ...legacyRow
+        }) => legacyRow
+      );
+      const retry = await admin
+        .from("lead_finder_candidates")
+        .insert(legacyRows)
+        .select("*")
+        .order("score", { ascending: false, nullsFirst: false });
+      if (retry.error) throw new Error(retry.error.message);
+      return ((retry.data ?? []) as LeadFinderCandidateRow[]).map(
+        leadFinderCandidateRowToCandidate
       );
     }
     throw new Error(error.message);
@@ -144,6 +177,21 @@ export async function fetchLeadFinderRunWithCandidates(
     .order("asset_likelihood_score", { ascending: false, nullsFirst: false })
     .order("score", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: true });
+  if (candErr && isMissingColumnError(candErr, ["asset_likelihood_score"])) {
+    const retry = await admin
+      .from("lead_finder_candidates")
+      .select("*")
+      .eq("run_id", id)
+      .order("score", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: true });
+    if (retry.error) throw new Error(retry.error.message);
+    return {
+      run: leadFinderRunRowToRun(run as LeadFinderRunRow),
+      candidates: ((retry.data ?? []) as LeadFinderCandidateRow[]).map(
+        leadFinderCandidateRowToCandidate
+      ),
+    };
+  }
   if (candErr) throw new Error(candErr.message);
 
   return {
@@ -272,6 +320,46 @@ export async function approveLeadFinderCandidate(
     })
     .select("*")
     .single();
+  if (leadErr && isMissingColumnError(leadErr, ["target_industry", "likely_asset_types"])) {
+    const retry = await admin
+      .from("leads")
+      .insert({
+        company_name: c.company_name,
+        contact_name: null,
+        email: c.email || null,
+        phone: c.phone || null,
+        website: c.website || null,
+        industry: c.industry || null,
+        state: c.state || null,
+        city: c.city || null,
+        lead_source: "Lead Finder - surplus holders",
+        equipment_type: (run?.equipment_type as string | undefined) ?? null,
+        estimated_value: null,
+        status: "New",
+        notes: notes || null,
+        tags,
+        company_summary: c.enrichment_summary,
+        industry_detected: c.industry,
+      })
+      .select("*")
+      .single();
+    if (retry.error) throw new Error(retry.error.message);
+
+    const lead = leadRowToLead(retry.data as LeadRow);
+    const { data: updated, error: upErr } = await admin
+      .from("lead_finder_candidates")
+      .update({ status: "approved", lead_id: lead.id })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (upErr) throw new Error(upErr.message);
+
+    return {
+      lead,
+      candidate: leadFinderCandidateRowToCandidate(updated as LeadFinderCandidateRow),
+      duplicate: false,
+    };
+  }
   if (leadErr) throw new Error(leadErr.message);
 
   const lead = leadRowToLead(leadRow as LeadRow);
