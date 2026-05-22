@@ -34,6 +34,32 @@ function isMissingColumnError(error: { message?: string } | null | undefined, co
   );
 }
 
+function normalizeWebsiteKey(website: string | null | undefined): string {
+  const raw = website?.trim().toLowerCase() ?? "";
+  if (!raw) return "";
+  try {
+    const url = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return raw.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0] ?? raw;
+  }
+}
+
+function normalizeEmailKey(email: string | null | undefined): string {
+  return email?.trim().toLowerCase() ?? "";
+}
+
+function normalizeCompanyLocationKey(input: {
+  company_name: string | null | undefined;
+  city: string | null | undefined;
+  state: string | null | undefined;
+}): string {
+  const company = input.company_name?.trim().toLowerCase().replace(/\s+/g, " ") ?? "";
+  const city = input.city?.trim().toLowerCase().replace(/\s+/g, " ") ?? "";
+  const state = input.state?.trim().toUpperCase() ?? "";
+  return company && city && state ? `${state}|${city}|${company}` : "";
+}
+
 export async function createLeadFinderRun(
   admin: SupabaseClient,
   input: LeadFinderSearchInput,
@@ -67,6 +93,49 @@ export async function createLeadFinderRun(
   }
   if (error) throw new Error(error.message);
   return leadFinderRunRowToRun(data as LeadFinderRunRow);
+}
+
+export async function filterExistingLeadFinderCandidates(
+  admin: SupabaseClient,
+  candidates: ScoredCandidate[]
+): Promise<ScoredCandidate[]> {
+  if (!candidates.length) return [];
+
+  const { data, error } = await admin
+    .from("leads")
+    .select("company_name, email, website, city, state")
+    .limit(10000);
+  if (error) throw new Error(error.message);
+
+  const emails = new Set<string>();
+  const websites = new Set<string>();
+  const companyLocations = new Set<string>();
+
+  for (const row of data ?? []) {
+    const email = normalizeEmailKey(row.email as string | null);
+    const website = normalizeWebsiteKey(row.website as string | null);
+    const companyLocation = normalizeCompanyLocationKey({
+      company_name: row.company_name as string | null,
+      city: row.city as string | null,
+      state: row.state as string | null,
+    });
+    if (email) emails.add(email);
+    if (website) websites.add(website);
+    if (companyLocation) companyLocations.add(companyLocation);
+  }
+
+  return candidates.filter((candidate) => {
+    const email = normalizeEmailKey(candidate.email);
+    if (email && emails.has(email)) return false;
+
+    const website = normalizeWebsiteKey(candidate.website);
+    if (website && websites.has(website)) return false;
+
+    const companyLocation = normalizeCompanyLocationKey(candidate);
+    if (companyLocation && companyLocations.has(companyLocation)) return false;
+
+    return true;
+  });
 }
 
 export async function finishLeadFinderRun(

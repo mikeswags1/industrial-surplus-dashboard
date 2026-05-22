@@ -13,6 +13,7 @@ import type {
 } from "@/lib/lead-finder/types";
 import {
   createLeadFinderRun,
+  filterExistingLeadFinderCandidates,
   finishLeadFinderRun,
   insertLeadFinderCandidates,
 } from "@/lib/repositories/lead-finder.repository";
@@ -207,7 +208,8 @@ export async function runLeadFinder(
 
     scored.sort((a, b) => sortScore(b) - sortScore(a));
     const withEmail = scored.filter((c) => isLikelyContactEmail(c.email));
-    const trimmed = withEmail.slice(0, normalized.count);
+    const withoutExistingLeads = await filterExistingLeadFinderCandidates(admin, withEmail);
+    const trimmed = withoutExistingLeads.slice(0, normalized.count);
 
     const candidates = await insertLeadFinderCandidates(admin, run.id, trimmed);
     const finished = await finishLeadFinderRun(admin, run.id, {
