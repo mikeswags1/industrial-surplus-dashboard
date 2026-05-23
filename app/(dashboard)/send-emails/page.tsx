@@ -102,6 +102,18 @@ export default function SendEmailsPage() {
       ),
     [leads]
   );
+  const availableToEmail = useMemo(
+    () => withEmail.filter((l) => !l.last_email_sent_at),
+    [withEmail],
+  );
+
+  useEffect(() => {
+    const availableIds = new Set(availableToEmail.map((l) => l.id));
+    setSelected((prev) => {
+      const next = new Set(Array.from(prev).filter((id) => availableIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [availableToEmail]);
 
   const generationFromSelection = useMemo(() => {
     const ids = Array.from(selected);
@@ -111,12 +123,13 @@ export default function SendEmailsPage() {
         .filter((l): l is Lead => Boolean(l));
       return deriveBatchGenerationInputs(sel, GENERATION_PAIN_POINT);
     }
-    const fallback = withEmail[0];
+    const fallback = availableToEmail[0];
     if (!fallback) return null;
     return deriveBatchGenerationInputs([fallback], GENERATION_PAIN_POINT);
-  }, [selected, leads, withEmail]);
+  }, [selected, leads, availableToEmail]);
 
   function toggle(id: string) {
+    if (!availableToEmail.some((l) => l.id === id)) return;
     setSelected((prev) => {
       const n = new Set(prev);
       if (n.has(id)) n.delete(id);
@@ -126,7 +139,7 @@ export default function SendEmailsPage() {
   }
 
   function selectAllMailable() {
-    setSelected(new Set(withEmail.map((l) => l.id)));
+    setSelected(new Set(availableToEmail.map((l) => l.id)));
   }
 
   async function generateFromSelection() {
@@ -135,7 +148,7 @@ export default function SendEmailsPage() {
       ids.length > 0
         ? ids.map((id) => leads.find((l) => l.id === id)).filter((l): l is Lead => Boolean(l))
         : [];
-    const seeds = selectedLeads.length > 0 ? selectedLeads : withEmail.slice(0, 1);
+    const seeds = selectedLeads.length > 0 ? selectedLeads : availableToEmail.slice(0, 1);
     const inputs = deriveBatchGenerationInputs(seeds, GENERATION_PAIN_POINT);
     if (!inputs) {
       setError("Select at least one lead with an email.");
@@ -269,7 +282,7 @@ export default function SendEmailsPage() {
         <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-elevated)] shadow-[var(--shadow-card)] p-5 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-medium text-zinc-300">
-              Select leads ({withEmail.length} with email)
+              Select leads ({availableToEmail.length} available, {withEmail.length} with email)
             </h2>
             <button
               type="button"
@@ -280,7 +293,7 @@ export default function SendEmailsPage() {
             </button>
           </div>
           <div className="max-h-[280px] overflow-y-auto divide-y divide-[var(--color-border)] text-sm">
-            {withEmail.map((l) => (
+            {availableToEmail.map((l) => (
               <label
                 key={l.id}
                 className="flex items-start gap-2 py-2 cursor-pointer hover:bg-[var(--color-surface-2)]/40 px-2 rounded"
@@ -293,12 +306,14 @@ export default function SendEmailsPage() {
                 <span>
                   <span className="text-zinc-200">{l.company_name}</span>
                   <span className="block text-xs text-zinc-500">{l.email}</span>
-                  {l.last_email_sent_at ? (
-                    <span className="block text-xs text-amber-500 mt-0.5">Previously emailed</span>
-                  ) : null}
                 </span>
               </label>
             ))}
+            {withEmail.length > 0 && availableToEmail.length === 0 ? (
+              <p className="px-2 py-4 text-xs text-zinc-500">
+                All valid-email leads have already been emailed. Add or find new leads to send another batch.
+              </p>
+            ) : null}
           </div>
           {withEmail.length === 0 ? (
             <p className="text-xs text-zinc-500">
@@ -312,7 +327,7 @@ export default function SendEmailsPage() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={genLoading || withEmail.length === 0}
+              disabled={genLoading || availableToEmail.length === 0}
               onClick={() => void generateFromSelection()}
               className="rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
             >
